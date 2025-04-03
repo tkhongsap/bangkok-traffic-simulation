@@ -4,7 +4,7 @@ import * as THREE from 'three'; // Needed for Vector3 potentially in future node
 export const ROAD_WIDTH = 8;
 export const LANE_WIDTH = ROAD_WIDTH / 3; // Adjusted for 3 lanes visually
 export const ROUNDABOUT_RADIUS = 30;
-export const APPROACH_ROAD_LENGTH = 60;
+export const APPROACH_ROAD_LENGTH = 200;
 export const ROAD_COLOR = 0x444444; // Dark grey
 export const ISLAND_COLOR = 0x228B22; // Forest green
 export const MARKING_COLOR = 0xFFFFFF; // White
