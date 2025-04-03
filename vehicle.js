@@ -7,8 +7,11 @@ export const VEHICLE_WIDTH = 2;
 export const VEHICLE_HEIGHT = 1.5;
 export const MAX_SPEED = 15; // m/s (~54 kph)
 export const ACCELERATION = 3; // m/s^2
-export const DECELERATION = 5; // m/s^2 (braking) - TODO: Implement usage
-export const SAFE_DISTANCE = VEHICLE_LENGTH * 1.5; // TODO: Implement usage (FR5.3)
+export const DECELERATION = 8; // m/s^2 (braking)
+export const SAFE_DISTANCE = VEHICLE_LENGTH * 1.5; // Base safe following distance
+const MIN_SPEED = 0.5; // Speed below which vehicle is considered stopped for yielding/following
+const YIELD_CHECK_DISTANCE = 20; // How far ahead to check for yielding
+const FOLLOWING_CHECK_DISTANCE = MAX_SPEED * 2; // How far ahead to check for following vehicle
 
 // --- Vehicle Class (FR5 / FR2.3 / FR6.2) ---
 export class Vehicle {
@@ -30,23 +33,22 @@ export class Vehicle {
         }
 
         // FR1.3: Assign a random lane (assuming lanes are 0, 1, 2, ... from inside to outside)
-        // Find the entry segment to know how many lanes are available
         const entrySegment = mapData.segments.find(s => s.from === startNodeId || s.to === startNodeId);
         const numLanes = entrySegment?.lanes || 1;
         this.laneIndex = Math.floor(Math.random() * numLanes);
 
         this.mesh.position.set(startNode.x, VEHICLE_HEIGHT / 2, startNode.z);
-        // TODO: Adjust initial position slightly based on laneIndex?
 
         // FR4.4: Assign a random valid path
         this.path = this.generateSimplePath(startNodeId);
         this.currentSegmentIndex = 0;
         this.progressOnSegment = 0; // Normalized progress (0 to 1)
         this.currentSpeed = 0; // Current speed m/s
+        this.targetSpeed = MAX_SPEED;
         this.markForRemoval = false; // Flag for cleanup
+        this.isYielding = false; // FR5.4: Flag for yielding state
 
         if (this.path && this.path.length > 0) {
-            // console.log(`Vehicle ${this.id} created at ${startNodeId}, path: ${this.path.map(s => s.id).join('->')}`);
             this.scene.add(this.mesh); // Add mesh to the scene
         } else {
             console.warn(`Vehicle ${this.id} created at ${startNodeId} but could not generate a valid path. Marking for removal.`);
@@ -72,44 +74,34 @@ export class Vehicle {
         }
 
         // FR4.4: Add randomness to exit selection instead of always choosing opposite
-        // Get all possible roundabout exit nodes (those connected to approach roads)
         const exitNodes = new Set();
         mapData.segments.forEach(segment => {
             if (!segment.isRoundabout) {
-                // If segment connects to roundabout, add the roundabout node as potential exit
                 if (segment.from.startsWith('r')) exitNodes.add(segment.from);
                 if (segment.to.startsWith('r')) exitNodes.add(segment.to);
             }
         });
-        
-        // Remove the entry node from potential exits
         exitNodes.delete(roundaboutEntryNodeId);
         
-        // Choose a random exit node, or default to opposite if randomization fails
         let targetExitRoundaboutNodeId = '';
         if (exitNodes.size > 0) {
             const exitNodesArray = Array.from(exitNodes);
-            // 50% chance of choosing random exit, 50% chance of choosing opposite
-            // (this makes traffic patterns more interesting while still realistic)
             if (Math.random() < 0.5) {
                 const randomIndex = Math.floor(Math.random() * exitNodesArray.length);
                 targetExitRoundaboutNodeId = exitNodesArray[randomIndex];
             } else {
-                // Default to opposite exit
                 if (roundaboutEntryNodeId === 'r1') targetExitRoundaboutNodeId = 'r3';
                 else if (roundaboutEntryNodeId === 'r2') targetExitRoundaboutNodeId = 'r4';
                 else if (roundaboutEntryNodeId === 'r3') targetExitRoundaboutNodeId = 'r1';
                 else if (roundaboutEntryNodeId === 'r4') targetExitRoundaboutNodeId = 'r2';
             }
         } else {
-            // Fallback to opposite exit logic
             if (roundaboutEntryNodeId === 'r1') targetExitRoundaboutNodeId = 'r3';
             else if (roundaboutEntryNodeId === 'r2') targetExitRoundaboutNodeId = 'r4';
             else if (roundaboutEntryNodeId === 'r3') targetExitRoundaboutNodeId = 'r1';
             else if (roundaboutEntryNodeId === 'r4') targetExitRoundaboutNodeId = 'r2';
         }
 
-        // Build the path
         const pathSegments = [];
         if(travelsTowardsRoundabout){
              pathSegments.push({ ...entrySegment, from: entryNodeId, to: roundaboutEntryNodeId, reversed: true });
@@ -117,15 +109,11 @@ export class Vehicle {
             pathSegments.push(entrySegment);
         }
 
-        // FR4.4: Add randomness to number of loops around roundabout
-        // 70% chance of direct path, 30% chance of doing 1+ loops
         const extraLoops = Math.random() < 0.3 ? Math.floor(Math.random() * 2) + 1 : 0;
-        
         let currentRoundaboutNodeId = roundaboutEntryNodeId;
         let loopCount = 0;
-        const maxLoops = roundaboutSegments.length * (extraLoops + 1) + 1; // Allow for deliberate extra loops
+        const maxLoops = roundaboutSegments.length * (extraLoops + 1) + 1;
         
-        // Continue adding segments until we reach exit node or max loops
         while(currentRoundaboutNodeId !== targetExitRoundaboutNodeId && loopCount < maxLoops) {
             const nextSegment = roundaboutSegments.find(s => s.from === currentRoundaboutNodeId);
             if (nextSegment) {
@@ -142,7 +130,6 @@ export class Vehicle {
              console.warn("Path generation exceeded max loops. Exiting at:", currentRoundaboutNodeId);
          }
 
-        // Find and add the exit segment
         const exitSegment = mapData.segments.find(s => s.from === targetExitRoundaboutNodeId && mapData.nodes[s.to]?.isExitPoint);
         if (exitSegment) {
             pathSegments.push(exitSegment);
@@ -158,9 +145,9 @@ export class Vehicle {
         return pathSegments;
     }
 
-    // FR5.1: Update vehicle position along path (with lane offset)
-    update(deltaTime) {
-        if (this.markForRemoval || this.currentSegmentIndex >= this.path.length) {
+    // FR5: Update vehicle position, speed, and behavior (yielding, following)
+    update(deltaTime, allVehicles) {
+        if (this.markForRemoval || !this.path || this.currentSegmentIndex >= this.path.length) {
             this.markForRemoval = true;
             return;
         }
@@ -169,11 +156,11 @@ export class Vehicle {
         const startNode = mapData.nodes[segment.from];
         const endNode = mapData.nodes[segment.to];
 
-         if (!startNode || !endNode) {
-             console.error(`Invalid node IDs in segment ${segment.id}: from ${segment.from}, to ${segment.to}`);
-             this.markForRemoval = true;
-             return;
-         }
+        if (!startNode || !endNode) {
+            console.error(`Invalid node IDs in segment ${segment.id}: from ${segment.from}, to ${segment.to}`);
+            this.markForRemoval = true;
+            return;
+        }
 
         const startVec = new THREE.Vector3(startNode.x, 0, startNode.z);
         const endVec = new THREE.Vector3(endNode.x, 0, endNode.z);
@@ -183,151 +170,222 @@ export class Vehicle {
         let direction = new THREE.Vector3();
         let perpendicular = new THREE.Vector3(); // Perpendicular for lane offset
 
-        // --- Calculate segment length and centerline target position --- 
+        // --- Calculate segment length and properties --- 
         if (segment.isRoundabout) {
-            const center = new THREE.Vector3(0, 0, 0); // Assuming center is at origin
-            const radius = ROUNDABOUT_RADIUS;
-
+            const radius = ROUNDABOUT_RADIUS; // Assuming center is at origin
             const angleStart = Math.atan2(startVec.z, startVec.x);
             let angleEnd = Math.atan2(endVec.z, endVec.x);
             if (angleEnd < angleStart) angleEnd += Math.PI * 2;
             const angleTotal = angleEnd - angleStart;
-
             segmentLength = Math.abs(angleTotal) * radius;
-            if (segmentLength < 0.01) segmentLength = 0.01;
-
-             // Calculate target position on the CENTER of the roundabout road
-             const currentAngle = angleStart + angleTotal * this.progressOnSegment;
-             targetCenterPosition = new THREE.Vector3(
-                 Math.cos(currentAngle) * radius,
-                 VEHICLE_HEIGHT / 2,
-                 Math.sin(currentAngle) * radius
-             );
-             // Direction tangent to the circle
-             direction.set(-Math.sin(currentAngle), 0, Math.cos(currentAngle)).normalize();
-             // Perpendicular vector points towards the center for offset calculation
-             perpendicular.set(-Math.cos(currentAngle), 0, -Math.sin(currentAngle)).normalize();
-
         } else {
-            // Movement along a straight segment
             segmentLength = startVec.distanceTo(endVec);
-            if (segmentLength < 0.01) segmentLength = 0.01;
+        }
+        if (segmentLength < 0.01) segmentLength = 0.01; // Avoid division by zero
 
-            // Calculate target position on the CENTERLINE
+        // --- FR5.4: Yielding Logic --- 
+        this.isYielding = false; // Reset yielding flag
+        const nextSegmentIndex = this.currentSegmentIndex + 1;
+        // Check if approaching a roundabout segment from a non-roundabout segment
+        if (!segment.isRoundabout && nextSegmentIndex < this.path.length && this.path[nextSegmentIndex].isRoundabout) {
+            const distanceToEndOfSegment = (1.0 - this.progressOnSegment) * segmentLength;
+            if (distanceToEndOfSegment < YIELD_CHECK_DISTANCE) { // Only check when close to intersection
+                const targetRoundaboutSegment = this.path[nextSegmentIndex];
+                const targetLaneIndex = this.laneIndex; // Assume entering same lane index
+                
+                for (const otherVehicle of allVehicles) {
+                    if (otherVehicle === this || otherVehicle.markForRemoval) continue;
+                    
+                    // Check if other vehicle is ON the target roundabout segment we want to enter
+                    if (otherVehicle.path[otherVehicle.currentSegmentIndex]?.id === targetRoundaboutSegment.id && 
+                        otherVehicle.laneIndex === targetLaneIndex) { 
+                        // Simple check: If a vehicle is on the target segment, yield
+                        // More complex check could involve distance/time to intersection
+                        this.isYielding = true;
+                        break; 
+                    }
+                }
+            }
+        }
+
+        // --- FR5.3: Following Distance Logic --- 
+        let vehicleAhead = null;
+        let distanceToVehicleAhead = Infinity;
+
+        for (const otherVehicle of allVehicles) {
+            if (otherVehicle === this || otherVehicle.markForRemoval) continue;
+
+            // Check if the other vehicle is on the same segment AND same lane
+            if (otherVehicle.path[otherVehicle.currentSegmentIndex]?.id === segment.id &&
+                otherVehicle.laneIndex === this.laneIndex &&
+                otherVehicle.progressOnSegment > this.progressOnSegment) { // Must be ahead
+                
+                const dist = (otherVehicle.progressOnSegment - this.progressOnSegment) * segmentLength;
+                if (dist < distanceToVehicleAhead && dist < FOLLOWING_CHECK_DISTANCE) {
+                    distanceToVehicleAhead = dist;
+                    vehicleAhead = otherVehicle;
+                }
+            }
+        }
+
+        // --- Calculate Target Speed --- 
+        this.targetSpeed = MAX_SPEED; // Default target speed
+
+        if (this.isYielding) {
+            this.targetSpeed = 0; // Stop if yielding
+        } else if (vehicleAhead) {
+            // Adjust speed based on distance to vehicle ahead (simple linear model)
+            const requiredStoppingDistance = SAFE_DISTANCE + (this.currentSpeed * this.currentSpeed) / (2 * DECELERATION);
+            if (distanceToVehicleAhead < requiredStoppingDistance) {
+                // Need to slow down or stop
+                this.targetSpeed = Math.max(0, vehicleAhead.currentSpeed - 1); // Try to match speed or stop
+            } else {
+                this.targetSpeed = MAX_SPEED; // Safe distance, aim for max speed
+            }
+        }
+
+        // --- Update Current Speed (Acceleration/Deceleration) --- 
+        if (this.currentSpeed < this.targetSpeed) {
+            this.currentSpeed = Math.min(this.targetSpeed, this.currentSpeed + ACCELERATION * deltaTime);
+        } else if (this.currentSpeed > this.targetSpeed) {
+            this.currentSpeed = Math.max(this.targetSpeed, this.currentSpeed - DECELERATION * deltaTime);
+        }
+        // Ensure speed doesn't go below zero, except when stopping
+        this.currentSpeed = Math.max(0, this.currentSpeed);
+
+
+        // --- Update Position & Progress --- 
+        const distanceToTravel = this.currentSpeed * deltaTime;
+        this.progressOnSegment += distanceToTravel / segmentLength;
+
+        // --- Calculate Current Position with Lane Offset --- 
+        let finalTargetPosition;
+        if (segment.isRoundabout) {
+            const radius = ROUNDABOUT_RADIUS;
+            const angleStart = Math.atan2(startVec.z, startVec.x);
+            let angleEnd = Math.atan2(endVec.z, endVec.x);
+            if (angleEnd < angleStart) angleEnd += Math.PI * 2;
+            const angleTotal = angleEnd - angleStart;
+            const currentAngle = angleStart + angleTotal * this.progressOnSegment;
+
+            targetCenterPosition = new THREE.Vector3(
+                Math.cos(currentAngle) * radius,
+                VEHICLE_HEIGHT / 2,
+                Math.sin(currentAngle) * radius
+            );
+            direction.set(-Math.sin(currentAngle), 0, Math.cos(currentAngle)).normalize();
+            perpendicular.set(-Math.cos(currentAngle), 0, -Math.sin(currentAngle)).normalize();
+        } else {
             targetCenterPosition = new THREE.Vector3().lerpVectors(startVec, endVec, this.progressOnSegment);
-            targetCenterPosition.y = VEHICLE_HEIGHT / 2; // Ensure correct height
+            targetCenterPosition.y = VEHICLE_HEIGHT / 2;
             direction.subVectors(endVec, startVec).normalize();
-            // Perpendicular vector for lane offset
             perpendicular.set(-direction.z, 0, direction.x).normalize();
         }
 
-        // --- Update Speed --- 
-        // TODO: Implement deceleration
-        this.currentSpeed = Math.min(MAX_SPEED, this.currentSpeed + ACCELERATION * deltaTime);
-        const distanceToTravel = this.currentSpeed * deltaTime;
-        let remainingDistanceOnSegment = (1.0 - this.progressOnSegment) * segmentLength;
-
-        // --- Calculate Lane Offset (FR1.3 implementation) ---
         const numLanes = segment.lanes || 1;
-        // Calculate offset from the centerline. Lane 0 is innermost.
-        // Offset = -(Half Road Width) + (Lane Center Offset)
-        // Lane Center Offset = LANE_WIDTH * (laneIndex + 0.5)
         const laneOffset = -(ROAD_WIDTH / 2) + LANE_WIDTH * (this.laneIndex + 0.5);
         const offsetVector = perpendicular.clone().multiplyScalar(laneOffset);
+        finalTargetPosition = targetCenterPosition.clone().add(offsetVector);
 
-        // --- Update Position & Progress ---
-        let finalTargetPosition;
-        if (distanceToTravel >= remainingDistanceOnSegment && this.currentSegmentIndex < this.path.length -1) {
-            // Move exactly to the end of the current segment's lane offset
-            this.progressOnSegment = 1.0;
+        // Update mesh position
+        this.mesh.position.copy(finalTargetPosition);
 
-            // Calculate end position on centerline first
-             let endCenterPos;
-             if (segment.isRoundabout) {
-                 const endAngle = Math.atan2(endVec.z, endVec.x);
-                  endCenterPos = new THREE.Vector3(
-                      Math.cos(endAngle) * ROUNDABOUT_RADIUS,
-                      VEHICLE_HEIGHT / 2,
-                      Math.sin(endAngle) * ROUNDABOUT_RADIUS
-                  );
-             } else {
-                  endCenterPos = endVec.clone();
-                  endCenterPos.y = VEHICLE_HEIGHT / 2;
-             }
-            // Apply lane offset to the end centerline position
-            finalTargetPosition = endCenterPos.add(offsetVector);
-            this.mesh.position.copy(finalTargetPosition);
-
-            // Advance to next segment
-            this.currentSegmentIndex++;
-            this.progressOnSegment = 0;
-
-            // If path finished after advancing, mark for removal
-             if (this.currentSegmentIndex >= this.path.length) {
-                 this.markForRemoval = true;
-                 return;
-             }
-
-        } else {
-             // Move along the current segment
-             // Prevent progress exceeding 1 if it's the last segment
-             const progressDelta = distanceToTravel / segmentLength;
-             this.progressOnSegment = (this.currentSegmentIndex === this.path.length - 1)
-                 ? Math.min(1.0, this.progressOnSegment + progressDelta)
-                 : this.progressOnSegment + progressDelta;
-             this.progressOnSegment = Math.min(this.progressOnSegment, 1.0); // Clamp progress
-
-             // Recalculate centerline position based on new progress
-             if (segment.isRoundabout) {
-                 const radius = ROUNDABOUT_RADIUS;
-                 const angleStart = Math.atan2(startVec.z, startVec.x);
-                 let angleEnd = Math.atan2(endVec.z, endVec.x);
-                 if (angleEnd < angleStart) angleEnd += Math.PI * 2;
-                 const angleTotal = angleEnd - angleStart;
-                 const currentAngle = angleStart + angleTotal * this.progressOnSegment;
-                 targetCenterPosition = new THREE.Vector3(
-                     Math.cos(currentAngle) * radius,
-                     VEHICLE_HEIGHT / 2,
-                     Math.sin(currentAngle) * radius
-                 );
-                 // Update direction & perpendicular for rotation and offset
-                 direction.set(-Math.sin(currentAngle), 0, Math.cos(currentAngle)).normalize();
-                 perpendicular.set(-Math.cos(currentAngle), 0, -Math.sin(currentAngle)).normalize();
-             } else {
-                 targetCenterPosition = new THREE.Vector3().lerpVectors(startVec, endVec, this.progressOnSegment);
-                 targetCenterPosition.y = VEHICLE_HEIGHT / 2;
-                 // Direction & perpendicular remain the same for straight segment
-             }
-
-             // Apply lane offset to the calculated centerline position
-             const laneOffsetRecalc = perpendicular.clone().multiplyScalar(laneOffset); // Recalculate offsetVector based on current perpendicular
-             finalTargetPosition = targetCenterPosition.add(laneOffsetRecalc);
-             this.mesh.position.copy(finalTargetPosition);
-        }
-
-        // --- Update Rotation (FR2.4) ---
-        if (direction.lengthSq() > 0.001) {
+        // Update mesh rotation
+        if (direction && direction.lengthSq() > 0.001) {
             const angle = Math.atan2(direction.x, direction.z);
             this.mesh.rotation.y = angle;
         }
 
-        // --- Update Color (FR6.2) ---
+        // --- FR6.2: Update color based on speed --- 
         const speedRatio = this.currentSpeed / MAX_SPEED;
-        if (speedRatio < 0.1) this.material.color.setHex(0xff0000);
-        else if (speedRatio < 0.6) this.material.color.setHex(0xffff00);
-        else this.material.color.setHex(0x00ff00);
+        if (this.isYielding || this.currentSpeed < MIN_SPEED) {
+            this.material.color.setHex(0xff0000); // Red (stopped/yielding)
+        } else if (speedRatio < 0.6) {
+            this.material.color.setHex(0xffff00); // Yellow (medium)
+        } else {
+            this.material.color.setHex(0x00ff00); // Green (fast)
+        }
 
-         // Mark for removal if progress reaches 1 on the *last* segment
-         if (this.progressOnSegment >= 1.0 && this.currentSegmentIndex >= this.path.length - 1) {
-             this.markForRemoval = true;
-         }
+        // --- Move to Next Segment --- 
+        if (this.progressOnSegment >= 1.0) {
+            const remainingProgress = this.progressOnSegment - 1.0;
+            this.currentSegmentIndex++;
+            this.progressOnSegment = 0; // Reset progress
+
+            if (this.currentSegmentIndex >= this.path.length) {
+                this.markForRemoval = true;
+            } else {
+                // Carry over excess progress to the next segment if needed
+                const nextSegment = this.path[this.currentSegmentIndex];
+                const nextStartNode = mapData.nodes[nextSegment.from];
+                const nextEndNode = mapData.nodes[nextSegment.to];
+                if (nextStartNode && nextEndNode) {
+                    let nextSegmentLength;
+                    if (nextSegment.isRoundabout) {
+                        const ns_startVec = new THREE.Vector3(nextStartNode.x, 0, nextStartNode.z);
+                        const ns_endVec = new THREE.Vector3(nextEndNode.x, 0, nextEndNode.z);
+                        const ns_angleStart = Math.atan2(ns_startVec.z, ns_startVec.x);
+                        let ns_angleEnd = Math.atan2(ns_endVec.z, ns_endVec.x);
+                        if (ns_angleEnd < ns_angleStart) ns_angleEnd += Math.PI * 2;
+                        nextSegmentLength = Math.abs(ns_angleEnd - ns_angleStart) * ROUNDABOUT_RADIUS;
+                    } else {
+                        nextSegmentLength = new THREE.Vector3(nextStartNode.x, 0, nextStartNode.z).distanceTo(new THREE.Vector3(nextEndNode.x, 0, nextEndNode.z));
+                    }
+                    if (nextSegmentLength > 0.01) {
+                        this.progressOnSegment = (remainingProgress * segmentLength) / nextSegmentLength;
+                    }
+                }
+                 // Snap position to the start of the new segment's lane to avoid visual jump
+                 this.updatePositionForCurrentProgress(); 
+            }
+        }
     }
 
-    // Cleanup resources
+    // Helper to recalculate and set position based on current segment/progress/lane
+    updatePositionForCurrentProgress() {
+         if (this.markForRemoval || !this.path || this.currentSegmentIndex >= this.path.length) {
+             return;
+         }
+         const segment = this.path[this.currentSegmentIndex];
+         const startNode = mapData.nodes[segment.from];
+         const endNode = mapData.nodes[segment.to];
+         if (!startNode || !endNode) return;
+
+         const startVec = new THREE.Vector3(startNode.x, 0, startNode.z);
+         const endVec = new THREE.Vector3(endNode.x, 0, endNode.z);
+         let targetCenterPosition;
+         let perpendicular = new THREE.Vector3();
+
+        if (segment.isRoundabout) {
+            const radius = ROUNDABOUT_RADIUS;
+            const angleStart = Math.atan2(startVec.z, startVec.x);
+            let angleEnd = Math.atan2(endVec.z, endVec.x);
+            if (angleEnd < angleStart) angleEnd += Math.PI * 2;
+            const angleTotal = angleEnd - angleStart;
+            const currentAngle = angleStart + angleTotal * this.progressOnSegment;
+            targetCenterPosition = new THREE.Vector3(Math.cos(currentAngle) * radius, VEHICLE_HEIGHT / 2, Math.sin(currentAngle) * radius);
+            perpendicular.set(-Math.cos(currentAngle), 0, -Math.sin(currentAngle)).normalize();
+        } else {
+            targetCenterPosition = new THREE.Vector3().lerpVectors(startVec, endVec, this.progressOnSegment);
+            targetCenterPosition.y = VEHICLE_HEIGHT / 2;
+            const direction = new THREE.Vector3().subVectors(endVec, startVec).normalize();
+            perpendicular.set(-direction.z, 0, direction.x).normalize();
+        }
+
+        const numLanes = segment.lanes || 1;
+        const laneOffset = -(ROAD_WIDTH / 2) + LANE_WIDTH * (this.laneIndex + 0.5);
+        const offsetVector = perpendicular.clone().multiplyScalar(laneOffset);
+        const finalPosition = targetCenterPosition.clone().add(offsetVector);
+        this.mesh.position.copy(finalPosition);
+    }
+
+
     dispose() {
-        if (this.mesh) this.scene.remove(this.mesh);
+        if (this.scene && this.mesh) {
+            this.scene.remove(this.mesh);
+        }
         this.geometry?.dispose();
         this.material?.dispose();
-        // console.log(`Disposed vehicle ${this.id}`);
+        // console.log(`Vehicle ${this.id} disposed.`);
     }
 } 

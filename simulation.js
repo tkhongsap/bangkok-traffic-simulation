@@ -38,7 +38,7 @@ export function getVehicles() {
  * @param {Date} simTime - The simulation time to check
  * @returns {boolean} True if the time is within a peak hour interval
  */
-function isPeakHour(time) {
+export function isPeakHour(time) {
     const hour = time.getHours();
     const minute = time.getMinutes();
     
@@ -212,7 +212,8 @@ function updateSimulationTime(deltaTime) {
  * @param {number} deltaTime - Time in seconds since last update
  */
 function updateVehicles(deltaTime) {
-    vehicles.forEach(vehicle => vehicle.update(deltaTime));
+    // Pass the entire vehicles array for collision/yielding checks
+    vehicles.forEach(vehicle => vehicle.update(deltaTime, vehicles));
 }
 
 /**
