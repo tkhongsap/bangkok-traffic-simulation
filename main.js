@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 // import { OrbitControls } from 'three/addons/controls/OrbitControls.js'; // Optional: For camera control
 import { createMapGeometry } from './mapRenderer.js';
-import { updateSimulation, getSimulationTime, getVehicles } from './simulation.js';
+import * as simulation from './simulation.js';
 
 // --- Constants ---
 const ROAD_WIDTH = 8;
@@ -28,6 +28,7 @@ const simulationSpeedMultiplier = 60; // e.g., 60x real-time
 // --- UI Elements ---
 let timeDisplayElement;
 let vehicleCountElement;
+let peakIndicatorElement;
 
 // --- Simulation Objects ---
 // FR1: Define map data structure (nodes, segments)
@@ -64,16 +65,37 @@ const mapData = {
 // TODO: Store active vehicles - FR5.5, FR6.1
 const vehicles = [];
 
+// FR4.3: Function to check if current time is peak hour
+function isPeakHour(time) {
+    const hours = time.getHours();
+    const minutes = time.getMinutes();
+    const timeInMinutes = hours * 60 + minutes;
+    
+    // Morning peak: 8:00-9:30
+    const morningPeakStart = 8 * 60;
+    const morningPeakEnd = 9 * 60 + 30;
+    
+    // Evening peak: 17:00-19:00
+    const eveningPeakStart = 17 * 60;
+    const eveningPeakEnd = 19 * 60;
+    
+    return (timeInMinutes >= morningPeakStart && timeInMinutes < morningPeakEnd) ||
+           (timeInMinutes >= eveningPeakStart && timeInMinutes < eveningPeakEnd);
+}
+
 // --- Initialization Function ---
 function init() {
     // Get container and UI elements
     simulationContainer = document.getElementById('simulation-container');
     timeDisplayElement = document.getElementById('time-display');
     vehicleCountElement = document.getElementById('vehicle-count');
+    peakIndicatorElement = document.getElementById('peak-indicator');
 
     // ---> Set initial UI text directly <---
     timeDisplayElement.textContent = "Time: 08:00";
     vehicleCountElement.textContent = "Vehicles: 0";
+    peakIndicatorElement.textContent = "Peak Traffic (Morning)";
+    peakIndicatorElement.classList.add("peak");
 
     // Scene
     scene = new THREE.Scene();
@@ -142,13 +164,28 @@ function onWindowResize() {
 
 // --- UI Update Logic (FR3.2, FR6.1) ---
 function updateUI() {
-    const simTime = getSimulationTime();
-    const vehicles = getVehicles();
+    const simTime = simulation.getSimulationTime();
+    const vehicles = simulation.getVehicles();
 
     // Update Time Display
     const hours = String(simTime.getHours()).padStart(2, '0');
     const minutes = String(simTime.getMinutes()).padStart(2, '0');
     timeDisplayElement.textContent = `Time: ${hours}:${minutes}`;
+
+    // Update Peak Hour Indicator (FR4.3)
+    const isPeak = isPeakHour(simTime);
+    
+    if (isPeak) {
+        const isMorning = simTime.getHours() < 12;
+        peakIndicatorElement.textContent = isMorning ? 
+            "Peak Traffic (Morning)" : "Peak Traffic (Evening)";
+        peakIndicatorElement.classList.remove("normal");
+        peakIndicatorElement.classList.add("peak");
+    } else {
+        peakIndicatorElement.textContent = "Normal Traffic";
+        peakIndicatorElement.classList.remove("peak");
+        peakIndicatorElement.classList.add("normal");
+    }
 
     // Update Vehicle Count
     vehicleCountElement.textContent = `Vehicles: ${vehicles.length}`;
@@ -158,12 +195,6 @@ function updateUI() {
 const BASE_SPAWN_INTERVAL = 5; // Seconds between spawns (base rate)
 const PEAK_HOUR_MULTIPLIER = 0.5; // Spawn interval multiplier during peak (lower = more spawns)
 let timeSinceLastSpawn = {}; // Track time per entry point
-
-function isPeakHour(simTime) {
-    const hours = simTime.getHours();
-    // Example peak hours: 8:00-9:30 and 17:00-19:00
-    return (hours >= 8 && hours < 10) || (hours >= 17 && hours < 19);
-}
 
 function spawnVehicles(deltaTime) {
     const currentSpawnInterval = isPeakHour(simulationTime)
@@ -415,7 +446,7 @@ function animate(timestamp) {
 
     if (dt > 0) { // Only update if time has actually passed
         // Update simulation logic (imported function)
-        updateSimulation(dt, scene);
+        simulation.update(dt, scene);
 
         // Update UI elements
         updateUI();

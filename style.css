@@ -28,4 +28,25 @@ body {
 
 #ui-overlay div:last-child {
     margin-bottom: 0;
+}
+
+/* FR4.3: Visual indicator for peak hours */
+#peak-indicator {
+    font-weight: bold;
+    transition: color 0.5s ease;
+}
+
+#peak-indicator.normal {
+    color: #88ff88; /* Light green for normal traffic */
+}
+
+#peak-indicator.peak {
+    color: #ff8888; /* Light red for peak traffic */
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 0.7; }
+    50% { opacity: 1; }
+    100% { opacity: 0.7; }
 } 

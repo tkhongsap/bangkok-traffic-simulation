@@ -54,7 +54,7 @@ export class Vehicle {
         }
     }
 
-    // FR4.4 / FR5.2 (Pathfinding): Generates a simple path
+    // FR4.4 / FR5.2 (Pathfinding): Generates a path for the vehicle
     generateSimplePath(entryNodeId) {
         const entrySegment = mapData.segments.find(s => s.from === entryNodeId || s.to === entryNodeId);
         if (!entrySegment) {
@@ -71,16 +71,45 @@ export class Vehicle {
             return [entrySegment];
         }
 
+        // FR4.4: Add randomness to exit selection instead of always choosing opposite
+        // Get all possible roundabout exit nodes (those connected to approach roads)
+        const exitNodes = new Set();
+        mapData.segments.forEach(segment => {
+            if (!segment.isRoundabout) {
+                // If segment connects to roundabout, add the roundabout node as potential exit
+                if (segment.from.startsWith('r')) exitNodes.add(segment.from);
+                if (segment.to.startsWith('r')) exitNodes.add(segment.to);
+            }
+        });
+        
+        // Remove the entry node from potential exits
+        exitNodes.delete(roundaboutEntryNodeId);
+        
+        // Choose a random exit node, or default to opposite if randomization fails
         let targetExitRoundaboutNodeId = '';
-        if (roundaboutEntryNodeId === 'r1') targetExitRoundaboutNodeId = 'r3';
-        else if (roundaboutEntryNodeId === 'r2') targetExitRoundaboutNodeId = 'r4';
-        else if (roundaboutEntryNodeId === 'r3') targetExitRoundaboutNodeId = 'r1';
-        else if (roundaboutEntryNodeId === 'r4') targetExitRoundaboutNodeId = 'r2';
-        else {
-            console.error("Unknown roundabout entry node ID:", roundaboutEntryNodeId);
-            return [entrySegment];
+        if (exitNodes.size > 0) {
+            const exitNodesArray = Array.from(exitNodes);
+            // 50% chance of choosing random exit, 50% chance of choosing opposite
+            // (this makes traffic patterns more interesting while still realistic)
+            if (Math.random() < 0.5) {
+                const randomIndex = Math.floor(Math.random() * exitNodesArray.length);
+                targetExitRoundaboutNodeId = exitNodesArray[randomIndex];
+            } else {
+                // Default to opposite exit
+                if (roundaboutEntryNodeId === 'r1') targetExitRoundaboutNodeId = 'r3';
+                else if (roundaboutEntryNodeId === 'r2') targetExitRoundaboutNodeId = 'r4';
+                else if (roundaboutEntryNodeId === 'r3') targetExitRoundaboutNodeId = 'r1';
+                else if (roundaboutEntryNodeId === 'r4') targetExitRoundaboutNodeId = 'r2';
+            }
+        } else {
+            // Fallback to opposite exit logic
+            if (roundaboutEntryNodeId === 'r1') targetExitRoundaboutNodeId = 'r3';
+            else if (roundaboutEntryNodeId === 'r2') targetExitRoundaboutNodeId = 'r4';
+            else if (roundaboutEntryNodeId === 'r3') targetExitRoundaboutNodeId = 'r1';
+            else if (roundaboutEntryNodeId === 'r4') targetExitRoundaboutNodeId = 'r2';
         }
 
+        // Build the path
         const pathSegments = [];
         if(travelsTowardsRoundabout){
              pathSegments.push({ ...entrySegment, from: entryNodeId, to: roundaboutEntryNodeId, reversed: true });
@@ -88,10 +117,15 @@ export class Vehicle {
             pathSegments.push(entrySegment);
         }
 
+        // FR4.4: Add randomness to number of loops around roundabout
+        // 70% chance of direct path, 30% chance of doing 1+ loops
+        const extraLoops = Math.random() < 0.3 ? Math.floor(Math.random() * 2) + 1 : 0;
+        
         let currentRoundaboutNodeId = roundaboutEntryNodeId;
         let loopCount = 0;
-        const maxLoops = roundaboutSegments.length + 1;
-
+        const maxLoops = roundaboutSegments.length * (extraLoops + 1) + 1; // Allow for deliberate extra loops
+        
+        // Continue adding segments until we reach exit node or max loops
         while(currentRoundaboutNodeId !== targetExitRoundaboutNodeId && loopCount < maxLoops) {
             const nextSegment = roundaboutSegments.find(s => s.from === currentRoundaboutNodeId);
             if (nextSegment) {
@@ -108,6 +142,7 @@ export class Vehicle {
              console.warn("Path generation exceeded max loops. Exiting at:", currentRoundaboutNodeId);
          }
 
+        // Find and add the exit segment
         const exitSegment = mapData.segments.find(s => s.from === targetExitRoundaboutNodeId && mapData.nodes[s.to]?.isExitPoint);
         if (exitSegment) {
             pathSegments.push(exitSegment);
@@ -119,6 +154,7 @@ export class Vehicle {
                 console.warn("Path generation failed: Could not find exit segment from", targetExitRoundaboutNodeId);
              }
         }
+        
         return pathSegments;
     }
 
