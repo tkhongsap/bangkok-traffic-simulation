@@ -176,7 +176,35 @@ export const mapData = {
         { id: 'apt_nw2', x: -(ROUNDABOUT_RADIUS + 130), z: -(ROUNDABOUT_RADIUS + 150), width: 16, depth: 14, height: 48, textureType: 'modern' },
         { id: 'shop_nw3', x: -(ROUNDABOUT_RADIUS + 150), z: -(ROUNDABOUT_RADIUS + 130), width: 10, depth: 8, height: 18, textureType: 'traditional' },
         { id: 'kiosk_nw5', x: -(ROUNDABOUT_RADIUS + 170), z: -(ROUNDABOUT_RADIUS + 110), width: 7, depth: 6, height: 12, textureType: 'shop' },
-        { id: 'store_nw3', x: -(ROUNDABOUT_RADIUS + 190), z: -(ROUNDABOUT_RADIUS + 90), width: 15, depth: 12, height: 28, textureType: 'store' }
+        { id: 'store_nw3', x: -(ROUNDABOUT_RADIUS + 190), z: -(ROUNDABOUT_RADIUS + 90), width: 15, depth: 12, height: 28, textureType: 'store' },
+
+        // Additional small buildings and food trucks - Northeast
+        { id: 'foodtruck_ne1', x: ROUNDABOUT_RADIUS + 110, z: -(ROUNDABOUT_RADIUS + 40), width: 4, depth: 3, height: 4, textureType: 'shop' },
+        { id: 'kiosk_ne6', x: ROUNDABOUT_RADIUS + 120, z: -(ROUNDABOUT_RADIUS + 55), width: 5, depth: 4, height: 6, textureType: 'traditional' },
+        { id: 'home_ne1', x: ROUNDABOUT_RADIUS + 140, z: -(ROUNDABOUT_RADIUS + 65), width: 8, depth: 8, height: 12, textureType: 'modern' },
+        { id: 'kiosk_ne7', x: ROUNDABOUT_RADIUS + 155, z: -(ROUNDABOUT_RADIUS + 45), width: 4, depth: 4, height: 5, textureType: 'shop' },
+        { id: 'foodtruck_ne2', x: ROUNDABOUT_RADIUS + 165, z: -(ROUNDABOUT_RADIUS + 60), width: 3, depth: 4, height: 4, textureType: 'traditional' },
+
+        // Additional small buildings and food trucks - Southeast
+        { id: 'foodtruck_se1', x: ROUNDABOUT_RADIUS + 110, z: ROUNDABOUT_RADIUS + 40, width: 4, depth: 3, height: 4, textureType: 'shop' },
+        { id: 'kiosk_se6', x: ROUNDABOUT_RADIUS + 125, z: ROUNDABOUT_RADIUS + 55, width: 5, depth: 4, height: 6, textureType: 'traditional' },
+        { id: 'home_se1', x: ROUNDABOUT_RADIUS + 145, z: ROUNDABOUT_RADIUS + 65, width: 8, depth: 8, height: 12, textureType: 'modern' },
+        { id: 'kiosk_se7', x: ROUNDABOUT_RADIUS + 160, z: ROUNDABOUT_RADIUS + 50, width: 4, depth: 4, height: 5, textureType: 'shop' },
+        { id: 'foodtruck_se2', x: ROUNDABOUT_RADIUS + 175, z: ROUNDABOUT_RADIUS + 45, width: 3, depth: 4, height: 4, textureType: 'traditional' },
+
+        // Additional small buildings and food trucks - Southwest
+        { id: 'foodtruck_sw1', x: -(ROUNDABOUT_RADIUS + 110), z: ROUNDABOUT_RADIUS + 40, width: 4, depth: 3, height: 4, textureType: 'shop' },
+        { id: 'kiosk_sw6', x: -(ROUNDABOUT_RADIUS + 125), z: ROUNDABOUT_RADIUS + 55, width: 5, depth: 4, height: 6, textureType: 'traditional' },
+        { id: 'home_sw1', x: -(ROUNDABOUT_RADIUS + 145), z: ROUNDABOUT_RADIUS + 65, width: 8, depth: 8, height: 12, textureType: 'modern' },
+        { id: 'kiosk_sw7', x: -(ROUNDABOUT_RADIUS + 160), z: ROUNDABOUT_RADIUS + 50, width: 4, depth: 4, height: 5, textureType: 'shop' },
+        { id: 'foodtruck_sw2', x: -(ROUNDABOUT_RADIUS + 175), z: ROUNDABOUT_RADIUS + 45, width: 3, depth: 4, height: 4, textureType: 'traditional' },
+
+        // Additional small buildings and food trucks - Northwest
+        { id: 'foodtruck_nw1', x: -(ROUNDABOUT_RADIUS + 110), z: -(ROUNDABOUT_RADIUS + 40), width: 4, depth: 3, height: 4, textureType: 'shop' },
+        { id: 'kiosk_nw6', x: -(ROUNDABOUT_RADIUS + 125), z: -(ROUNDABOUT_RADIUS + 55), width: 5, depth: 4, height: 6, textureType: 'traditional' },
+        { id: 'home_nw1', x: -(ROUNDABOUT_RADIUS + 145), z: -(ROUNDABOUT_RADIUS + 65), width: 8, depth: 8, height: 12, textureType: 'modern' },
+        { id: 'kiosk_nw7', x: -(ROUNDABOUT_RADIUS + 160), z: -(ROUNDABOUT_RADIUS + 50), width: 4, depth: 4, height: 5, textureType: 'shop' },
+        { id: 'foodtruck_nw2', x: -(ROUNDABOUT_RADIUS + 175), z: -(ROUNDABOUT_RADIUS + 45), width: 3, depth: 4, height: 4, textureType: 'traditional' }
     ]
     // paths: [] // Path definition might move or be generated dynamically
 }; 
