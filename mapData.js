@@ -207,7 +207,7 @@ export const mapData = {
         { id: 'foodtruck_nw2', x: -(ROUNDABOUT_RADIUS + 175), z: -(ROUNDABOUT_RADIUS + 45), width: 3, depth: 4, height: 4, textureType: 'traditional' },
 
         // Additional buildings in Northeast quadrant
-        ...Array.from({ length: 20 }, (_, i) => ({
+        ...Array.from({ length: 70 }, (_, i) => ({
             id: `small_ne_${i + 1}`,
             x: ROUNDABOUT_RADIUS + 80 + (i % 5) * 25,
             z: -(ROUNDABOUT_RADIUS + 80 + Math.floor(i / 5) * 25),
@@ -218,7 +218,7 @@ export const mapData = {
         })),
 
         // Additional buildings in Southeast quadrant
-        ...Array.from({ length: 20 }, (_, i) => ({
+        ...Array.from({ length: 70 }, (_, i) => ({
             id: `small_se_${i + 1}`,
             x: ROUNDABOUT_RADIUS + 80 + (i % 5) * 25,
             z: ROUNDABOUT_RADIUS + 80 + Math.floor(i / 5) * 25,
@@ -229,7 +229,7 @@ export const mapData = {
         })),
 
         // Additional buildings in Southwest quadrant
-        ...Array.from({ length: 20 }, (_, i) => ({
+        ...Array.from({ length: 70 }, (_, i) => ({
             id: `small_sw_${i + 1}`,
             x: -(ROUNDABOUT_RADIUS + 80 + (i % 5) * 25),
             z: ROUNDABOUT_RADIUS + 80 + Math.floor(i / 5) * 25,
@@ -240,7 +240,7 @@ export const mapData = {
         })),
 
         // Additional buildings in Northwest quadrant
-        ...Array.from({ length: 20 }, (_, i) => ({
+        ...Array.from({ length: 70 }, (_, i) => ({
             id: `small_nw_${i + 1}`,
             x: -(ROUNDABOUT_RADIUS + 80 + (i % 5) * 25),
             z: -(ROUNDABOUT_RADIUS + 80 + Math.floor(i / 5) * 25),
