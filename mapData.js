@@ -61,7 +61,28 @@ export const mapData = {
         { id: 'smallShop1', x: ROUNDABOUT_RADIUS + 95, z: ROUNDABOUT_RADIUS + 95, width: 8, depth: 7, height: 12, textureType: 'shop' },
         { id: 'kiosk3', x: ROUNDABOUT_RADIUS + 115, z: ROUNDABOUT_RADIUS + 65, width: 6, depth: 6, height: 10, textureType: 'modern' },
         
-        // Small structures southwest
+        // Dense small structures everywhere (keeping clear of roads)
+        // Northeast area fills
+        { id: 'kiosk_ne1', x: ROUNDABOUT_RADIUS + 15, z: -(ROUNDABOUT_RADIUS + 15), width: 5, depth: 4, height: 8, textureType: 'traditional' },
+        { id: 'kiosk_ne2', x: ROUNDABOUT_RADIUS + 25, z: -(ROUNDABOUT_RADIUS + 20), width: 4, depth: 4, height: 6, textureType: 'shop' },
+        { id: 'kiosk_ne3', x: ROUNDABOUT_RADIUS + 20, z: -(ROUNDABOUT_RADIUS + 30), width: 5, depth: 5, height: 7, textureType: 'store' },
+        
+        // Southeast area fills
+        { id: 'kiosk_se1', x: ROUNDABOUT_RADIUS + 15, z: ROUNDABOUT_RADIUS + 15, width: 4, depth: 4, height: 6, textureType: 'shop' },
+        { id: 'kiosk_se2', x: ROUNDABOUT_RADIUS + 25, z: ROUNDABOUT_RADIUS + 25, width: 5, depth: 4, height: 7, textureType: 'traditional' },
+        { id: 'kiosk_se3', x: ROUNDABOUT_RADIUS + 20, z: ROUNDABOUT_RADIUS + 35, width: 4, depth: 5, height: 8, textureType: 'store' },
+        
+        // Southwest area fills
+        { id: 'kiosk_sw1', x: -(ROUNDABOUT_RADIUS + 15), z: ROUNDABOUT_RADIUS + 15, width: 4, depth: 4, height: 7, textureType: 'modern' },
+        { id: 'kiosk_sw2', x: -(ROUNDABOUT_RADIUS + 25), z: ROUNDABOUT_RADIUS + 25, width: 5, depth: 4, height: 6, textureType: 'shop' },
+        { id: 'kiosk_sw3', x: -(ROUNDABOUT_RADIUS + 35), z: ROUNDABOUT_RADIUS + 20, width: 4, depth: 5, height: 8, textureType: 'traditional' },
+        
+        // Northwest area fills
+        { id: 'kiosk_nw1', x: -(ROUNDABOUT_RADIUS + 15), z: -(ROUNDABOUT_RADIUS + 15), width: 4, depth: 4, height: 7, textureType: 'store' },
+        { id: 'kiosk_nw2', x: -(ROUNDABOUT_RADIUS + 25), z: -(ROUNDABOUT_RADIUS + 25), width: 5, depth: 4, height: 6, textureType: 'modern' },
+        { id: 'kiosk_nw3', x: -(ROUNDABOUT_RADIUS + 20), z: -(ROUNDABOUT_RADIUS + 35), width: 4, depth: 5, height: 8, textureType: 'shop' },
+        
+        // Original small structures
         { id: 'foodStall2', x: -(ROUNDABOUT_RADIUS + 85), z: ROUNDABOUT_RADIUS + 85, width: 7, depth: 6, height: 8, textureType: 'traditional' },
         { id: 'miniMart2', x: -(ROUNDABOUT_RADIUS + 115), z: ROUNDABOUT_RADIUS + 85, width: 10, depth: 8, height: 12, textureType: 'store' },
         { id: 'kiosk4', x: -(ROUNDABOUT_RADIUS + 75), z: ROUNDABOUT_RADIUS + 95, width: 6, depth: 5, height: 10, textureType: 'modern' },
