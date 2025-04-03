@@ -128,7 +128,55 @@ export const mapData = {
         { id: 'shop9', x: ROUNDABOUT_RADIUS + 45, z: -15, width: 12, depth: 10, height: 20 },
         { id: 'shop10', x: -(ROUNDABOUT_RADIUS + 45), z: 15, width: 12, depth: 10, height: 20 },
         { id: 'shop11', x: -15, z: ROUNDABOUT_RADIUS + 45, width: 10, depth: 12, height: 20 },
-        { id: 'shop12', x: 15, z: -(ROUNDABOUT_RADIUS + 45), width: 10, depth: 12, height: 20 }
+        { id: 'shop12', x: 15, z: -(ROUNDABOUT_RADIUS + 45), width: 10, depth: 12, height: 20 },
+
+        // Additional dense buildings - Northeast quadrant
+        { id: 'shop_ne1', x: ROUNDABOUT_RADIUS + 130, z: -(ROUNDABOUT_RADIUS + 110), width: 12, depth: 10, height: 25, textureType: 'shop' },
+        { id: 'apt_ne1', x: ROUNDABOUT_RADIUS + 150, z: -(ROUNDABOUT_RADIUS + 90), width: 15, depth: 12, height: 45, textureType: 'modern' },
+        { id: 'store_ne1', x: ROUNDABOUT_RADIUS + 170, z: -(ROUNDABOUT_RADIUS + 70), width: 18, depth: 15, height: 30, textureType: 'store' },
+        { id: 'shop_ne2', x: ROUNDABOUT_RADIUS + 140, z: -(ROUNDABOUT_RADIUS + 130), width: 10, depth: 8, height: 20, textureType: 'traditional' },
+        { id: 'kiosk_ne4', x: ROUNDABOUT_RADIUS + 160, z: -(ROUNDABOUT_RADIUS + 110), width: 8, depth: 6, height: 15, textureType: 'shop' },
+        { id: 'store_ne2', x: ROUNDABOUT_RADIUS + 180, z: -(ROUNDABOUT_RADIUS + 90), width: 14, depth: 12, height: 25, textureType: 'store' },
+        { id: 'apt_ne2', x: ROUNDABOUT_RADIUS + 130, z: -(ROUNDABOUT_RADIUS + 150), width: 16, depth: 14, height: 40, textureType: 'modern' },
+        { id: 'shop_ne3', x: ROUNDABOUT_RADIUS + 150, z: -(ROUNDABOUT_RADIUS + 130), width: 10, depth: 8, height: 18, textureType: 'traditional' },
+        { id: 'kiosk_ne5', x: ROUNDABOUT_RADIUS + 170, z: -(ROUNDABOUT_RADIUS + 110), width: 7, depth: 6, height: 12, textureType: 'shop' },
+        { id: 'store_ne3', x: ROUNDABOUT_RADIUS + 190, z: -(ROUNDABOUT_RADIUS + 90), width: 15, depth: 12, height: 28, textureType: 'store' },
+
+        // Additional dense buildings - Southeast quadrant
+        { id: 'shop_se1', x: ROUNDABOUT_RADIUS + 130, z: ROUNDABOUT_RADIUS + 110, width: 12, depth: 10, height: 22, textureType: 'shop' },
+        { id: 'apt_se1', x: ROUNDABOUT_RADIUS + 150, z: ROUNDABOUT_RADIUS + 90, width: 15, depth: 12, height: 48, textureType: 'modern' },
+        { id: 'store_se1', x: ROUNDABOUT_RADIUS + 170, z: ROUNDABOUT_RADIUS + 70, width: 16, depth: 14, height: 32, textureType: 'store' },
+        { id: 'shop_se2', x: ROUNDABOUT_RADIUS + 140, z: ROUNDABOUT_RADIUS + 130, width: 10, depth: 8, height: 20, textureType: 'traditional' },
+        { id: 'kiosk_se4', x: ROUNDABOUT_RADIUS + 160, z: ROUNDABOUT_RADIUS + 110, width: 8, depth: 6, height: 15, textureType: 'shop' },
+        { id: 'store_se2', x: ROUNDABOUT_RADIUS + 180, z: ROUNDABOUT_RADIUS + 90, width: 14, depth: 12, height: 25, textureType: 'store' },
+        { id: 'apt_se2', x: ROUNDABOUT_RADIUS + 130, z: ROUNDABOUT_RADIUS + 150, width: 16, depth: 14, height: 42, textureType: 'modern' },
+        { id: 'shop_se3', x: ROUNDABOUT_RADIUS + 150, z: ROUNDABOUT_RADIUS + 130, width: 10, depth: 8, height: 18, textureType: 'traditional' },
+        { id: 'kiosk_se5', x: ROUNDABOUT_RADIUS + 170, z: ROUNDABOUT_RADIUS + 110, width: 7, depth: 6, height: 12, textureType: 'shop' },
+        { id: 'store_se3', x: ROUNDABOUT_RADIUS + 190, z: ROUNDABOUT_RADIUS + 90, width: 15, depth: 12, height: 28, textureType: 'store' },
+
+        // Additional dense buildings - Southwest quadrant
+        { id: 'shop_sw1', x: -(ROUNDABOUT_RADIUS + 130), z: ROUNDABOUT_RADIUS + 110, width: 12, depth: 10, height: 24, textureType: 'shop' },
+        { id: 'apt_sw1', x: -(ROUNDABOUT_RADIUS + 150), z: ROUNDABOUT_RADIUS + 90, width: 15, depth: 12, height: 50, textureType: 'modern' },
+        { id: 'store_sw1', x: -(ROUNDABOUT_RADIUS + 170), z: ROUNDABOUT_RADIUS + 70, width: 17, depth: 14, height: 35, textureType: 'store' },
+        { id: 'shop_sw2', x: -(ROUNDABOUT_RADIUS + 140), z: ROUNDABOUT_RADIUS + 130, width: 10, depth: 8, height: 20, textureType: 'traditional' },
+        { id: 'kiosk_sw4', x: -(ROUNDABOUT_RADIUS + 160), z: ROUNDABOUT_RADIUS + 110, width: 8, depth: 6, height: 15, textureType: 'shop' },
+        { id: 'store_sw2', x: -(ROUNDABOUT_RADIUS + 180), z: ROUNDABOUT_RADIUS + 90, width: 14, depth: 12, height: 25, textureType: 'store' },
+        { id: 'apt_sw2', x: -(ROUNDABOUT_RADIUS + 130), z: ROUNDABOUT_RADIUS + 150, width: 16, depth: 14, height: 45, textureType: 'modern' },
+        { id: 'shop_sw3', x: -(ROUNDABOUT_RADIUS + 150), z: ROUNDABOUT_RADIUS + 130, width: 10, depth: 8, height: 18, textureType: 'traditional' },
+        { id: 'kiosk_sw5', x: -(ROUNDABOUT_RADIUS + 170), z: ROUNDABOUT_RADIUS + 110, width: 7, depth: 6, height: 12, textureType: 'shop' },
+        { id: 'store_sw3', x: -(ROUNDABOUT_RADIUS + 190), z: ROUNDABOUT_RADIUS + 90, width: 15, depth: 12, height: 28, textureType: 'store' },
+
+        // Additional dense buildings - Northwest quadrant
+        { id: 'shop_nw1', x: -(ROUNDABOUT_RADIUS + 130), z: -(ROUNDABOUT_RADIUS + 110), width: 12, depth: 10, height: 26, textureType: 'shop' },
+        { id: 'apt_nw1', x: -(ROUNDABOUT_RADIUS + 150), z: -(ROUNDABOUT_RADIUS + 90), width: 15, depth: 12, height: 52, textureType: 'modern' },
+        { id: 'store_nw1', x: -(ROUNDABOUT_RADIUS + 170), z: -(ROUNDABOUT_RADIUS + 70), width: 18, depth: 15, height: 38, textureType: 'store' },
+        { id: 'shop_nw2', x: -(ROUNDABOUT_RADIUS + 140), z: -(ROUNDABOUT_RADIUS + 130), width: 10, depth: 8, height: 20, textureType: 'traditional' },
+        { id: 'kiosk_nw4', x: -(ROUNDABOUT_RADIUS + 160), z: -(ROUNDABOUT_RADIUS + 110), width: 8, depth: 6, height: 15, textureType: 'shop' },
+        { id: 'store_nw2', x: -(ROUNDABOUT_RADIUS + 180), z: -(ROUNDABOUT_RADIUS + 90), width: 14, depth: 12, height: 25, textureType: 'store' },
+        { id: 'apt_nw2', x: -(ROUNDABOUT_RADIUS + 130), z: -(ROUNDABOUT_RADIUS + 150), width: 16, depth: 14, height: 48, textureType: 'modern' },
+        { id: 'shop_nw3', x: -(ROUNDABOUT_RADIUS + 150), z: -(ROUNDABOUT_RADIUS + 130), width: 10, depth: 8, height: 18, textureType: 'traditional' },
+        { id: 'kiosk_nw5', x: -(ROUNDABOUT_RADIUS + 170), z: -(ROUNDABOUT_RADIUS + 110), width: 7, depth: 6, height: 12, textureType: 'shop' },
+        { id: 'store_nw3', x: -(ROUNDABOUT_RADIUS + 190), z: -(ROUNDABOUT_RADIUS + 90), width: 15, depth: 12, height: 28, textureType: 'store' }
     ]
     // paths: [] // Path definition might move or be generated dynamically
 }; 
