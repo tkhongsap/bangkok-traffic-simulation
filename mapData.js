@@ -82,11 +82,11 @@ export const mapData = {
         { id: 'office4', x: -(ROUNDABOUT_RADIUS + 115), z: -(ROUNDABOUT_RADIUS + 65), width: 28, depth: 22, height: 75 },
         { id: 'shop8', x: -(ROUNDABOUT_RADIUS + 45), z: -(ROUNDABOUT_RADIUS + 105), width: 18, depth: 15, height: 25 },
         
-        // Inner ring buildings (closer to roundabout)
-        { id: 'shop9', x: ROUNDABOUT_RADIUS + 35, z: 0, width: 12, depth: 10, height: 20 },
-        { id: 'shop10', x: -(ROUNDABOUT_RADIUS + 35), z: 0, width: 12, depth: 10, height: 20 },
-        { id: 'shop11', x: 0, z: ROUNDABOUT_RADIUS + 35, width: 10, depth: 12, height: 20 },
-        { id: 'shop12', x: 0, z: -(ROUNDABOUT_RADIUS + 35), width: 10, depth: 12, height: 20 }
+        // Buildings are positioned further from roads
+        { id: 'shop9', x: ROUNDABOUT_RADIUS + 45, z: -15, width: 12, depth: 10, height: 20 },
+        { id: 'shop10', x: -(ROUNDABOUT_RADIUS + 45), z: 15, width: 12, depth: 10, height: 20 },
+        { id: 'shop11', x: -15, z: ROUNDABOUT_RADIUS + 45, width: 10, depth: 12, height: 20 },
+        { id: 'shop12', x: 15, z: -(ROUNDABOUT_RADIUS + 45), width: 10, depth: 12, height: 20 }
     ]
     // paths: [] // Path definition might move or be generated dynamically
 }; 
