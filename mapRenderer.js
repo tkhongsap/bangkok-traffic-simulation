@@ -6,20 +6,31 @@ const roadMaterial = new THREE.MeshLambertMaterial({ color: ROAD_COLOR });
 const islandMaterial = new THREE.MeshLambertMaterial({ color: ISLAND_COLOR });
 
 // Create building materials with window patterns
-function createBuildingMaterial(color = BUILDING_COLOR) {
+function createBuildingMaterial(color = BUILDING_COLOR, textureType = 'default') {
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
     canvas.width = 512;
     canvas.height = 512;
 
+    // Different texture patterns based on building type
+    const patterns = {
+        shop: { baseColor: '#e8c17a', windowColor: '#4a4a4a', windowSize: 30, windowGap: 15 },
+        modern: { baseColor: '#a5d8dd', windowColor: '#2a5674', windowSize: 45, windowGap: 10 },
+        store: { baseColor: '#d4a373', windowColor: '#463f3a', windowSize: 35, windowGap: 20 },
+        traditional: { baseColor: '#cb997e', windowColor: '#6b705c', windowSize: 25, windowGap: 25 },
+        default: { baseColor: `#${color.toString(16).padStart(6, '0')}`, windowColor: '#444444', windowSize: 40, windowGap: 20 }
+    };
+
+    const pattern = patterns[textureType] || patterns.default;
+
     // Base color
-    context.fillStyle = `#${color.toString(16).padStart(6, '0')}`;
+    context.fillStyle = pattern.baseColor;
     context.fillRect(0, 0, canvas.width, canvas.height);
 
     // Draw windows pattern
-    context.fillStyle = '#444444';
-    const windowSize = 40;
-    const windowGap = 20;
+    context.fillStyle = pattern.windowColor;
+    const windowSize = pattern.windowSize;
+    const windowGap = pattern.windowGap;
     const doorWidth = 60;
     const doorHeight = 100;
 
@@ -187,7 +198,8 @@ export function createMapGeometry(mapGroup) {
             0, repeatY, repeatX, repeatY, 0, 0, repeatX, 0
         ]);
 
-        const mesh = new THREE.Mesh(geom, buildingMaterial);
+        const material = createBuildingMaterial(BUILDING_COLOR, buildingData.textureType);
+        const mesh = new THREE.Mesh(geom, material);
         mesh.position.set(buildingData.x, buildingData.height / 2, buildingData.z);
         mapGroup.add(mesh);
     });

@@ -50,6 +50,27 @@ export const mapData = {
     ],
     // FR1.1: Basic building footprints/heights
     buildings: [
+        // Additional small structures to fill gaps
+        // Small shops and kiosks near the northeast
+        { id: 'kiosk1', x: ROUNDABOUT_RADIUS + 55, z: -(ROUNDABOUT_RADIUS + 25), width: 8, depth: 6, height: 12, textureType: 'shop' },
+        { id: 'kiosk2', x: ROUNDABOUT_RADIUS + 35, z: -(ROUNDABOUT_RADIUS + 35), width: 6, depth: 8, height: 10, textureType: 'modern' },
+        { id: 'miniMart1', x: ROUNDABOUT_RADIUS + 105, z: -(ROUNDABOUT_RADIUS + 85), width: 10, depth: 8, height: 15, textureType: 'store' },
+        
+        // Small structures southeast
+        { id: 'foodStall1', x: ROUNDABOUT_RADIUS + 55, z: ROUNDABOUT_RADIUS + 65, width: 5, depth: 5, height: 8, textureType: 'traditional' },
+        { id: 'smallShop1', x: ROUNDABOUT_RADIUS + 95, z: ROUNDABOUT_RADIUS + 95, width: 8, depth: 7, height: 12, textureType: 'shop' },
+        { id: 'kiosk3', x: ROUNDABOUT_RADIUS + 115, z: ROUNDABOUT_RADIUS + 65, width: 6, depth: 6, height: 10, textureType: 'modern' },
+        
+        // Small structures southwest
+        { id: 'foodStall2', x: -(ROUNDABOUT_RADIUS + 85), z: ROUNDABOUT_RADIUS + 85, width: 7, depth: 6, height: 8, textureType: 'traditional' },
+        { id: 'miniMart2', x: -(ROUNDABOUT_RADIUS + 115), z: ROUNDABOUT_RADIUS + 85, width: 10, depth: 8, height: 12, textureType: 'store' },
+        { id: 'kiosk4', x: -(ROUNDABOUT_RADIUS + 75), z: ROUNDABOUT_RADIUS + 95, width: 6, depth: 5, height: 10, textureType: 'modern' },
+        
+        // Small structures northwest
+        { id: 'smallShop2', x: -(ROUNDABOUT_RADIUS + 85), z: -(ROUNDABOUT_RADIUS + 95), width: 8, depth: 7, height: 12, textureType: 'shop' },
+        { id: 'kiosk5', x: -(ROUNDABOUT_RADIUS + 95), z: -(ROUNDABOUT_RADIUS + 85), width: 6, depth: 6, height: 10, textureType: 'modern' },
+        { id: 'foodStall3', x: -(ROUNDABOUT_RADIUS + 125), z: -(ROUNDABOUT_RADIUS + 85), width: 5, depth: 5, height: 8, textureType: 'traditional' },
+        
         // Northeast quadrant (dense commercial district)
         { id: 'tower1', x: ROUNDABOUT_RADIUS + 45, z: -(ROUNDABOUT_RADIUS + 45), width: 25, depth: 25, height: 100 },
         { id: 'office1', x: ROUNDABOUT_RADIUS + 75, z: -(ROUNDABOUT_RADIUS + 45), width: 20, depth: 20, height: 85 },
