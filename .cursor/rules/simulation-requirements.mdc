@@ -1,0 +1,88 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+**Project Requirements: Bangkok Roundabout Traffic Simulation (Updated)**
+
+**_Note:_** _These requirements have been updated to reflect the goal of achieving a 3D perspective visualization using a WebGL library, moving away from the initial 2D/vanilla JS approach._
+
+**1. Introduction & Goal**
+
+* **Project Title:** Web-Based Bangkok Roundabout 3D Traffic Simulation
+* **Goal:** To create a visual, **3D perspective view** simulation of traffic flow on a specific Bangkok roundabout (based on the provided image of Wongwian Yai), demonstrating varying traffic density, particularly during peak hours (8:00 - 20:00), with a **sense of 3D depth and detail resembling the reference image**.
+* **Target Platform:** Modern web browsers supporting WebGL (Chrome, Firefox, Edge, Safari).
+* **Output:** A web application, runnable from a single HTML file (which may link to external libraries like Three.js via CDN or include bundled code).
+
+**2. Scope**
+
+* **In Scope:**
+    * Visual representation of the Wongwian Yai roundabout and its main connecting roads using **3D geometry** to resemble the provided image.
+    * **3D perspective view** using **WebGL via a library (e.g., Three.js)**. Camera angle may be fixed or allow minimal user control (e.g., orbit).
+    * Simulation of time progression from 08:00 to 20:00.
+    * Variable vehicle spawning rates based on simulated time (higher during peak hours).
+    * Representation of vehicles as simple **3D geometric shapes** (e.g., boxes).
+    * Representation of buildings surrounding the roundabout as simple **3D geometric shapes** (e.g., boxes of varying heights) based on the image layout.
+    * Basic vehicle movement logic in 3D space: following paths, maintaining safe distance, simple yielding at roundabout entries.
+    * Visual indication of traffic density/speed (e.g., vehicle color change, number of vehicles).
+    * UI display (HTML overlay) for current simulation time and active vehicle count.
+    * Implementation using HTML, CSS, **JavaScript, and a WebGL library (e.g., Three.js is recommended)**.
+* **Out of Scope (Initial Version):**
+    * Photorealistic rendering or complex 3D modeling/texturing.
+    * Precise geographic accuracy or scale.
+    * Complex driver AI (aggressive lane changes, complex collision avoidance).
+    * Multiple vehicle types (motorcycles, buses) with different 3D models/behaviors.
+    * Traffic light simulation.
+    * Extensive user interaction (e.g., complex camera controls, changing parameters mid-simulation).
+    * Saving/loading simulation state.
+    * Integration with external map APIs or real-time traffic data.
+
+**3. Functional Requirements**
+
+* **FR1: Map Representation:**
+    * FR1.1: Define a data structure (JavaScript objects/arrays) for nodes and segments representing the roundabout, approach roads, and basic building footprints/heights in **3D space**, based on the provided image.
+    * FR1.2: The map data should include **3D coordinates** and connectivity information suitable for generating geometry in the 3D scene.
+    * FR1.3: The roundabout model should feature multiple visually distinct circulating lanes (start with 2-3).
+    * FR1.4: Define specific nodes/areas as entry points and exit points for vehicles in the 3D space.
+* **FR2: Visualization (using WebGL Library):**
+    * FR2.1: Render the defined road network (segments) as **3D geometry** (e.g., flat meshes) in the scene.
+    * FR2.2: Render the central island and surrounding buildings as **simple 3D geometry** (e.g., extruded shapes, boxes).
+    * FR2.3: Render vehicles as simple **3D shapes** (e.g., boxes) in the 3D scene.
+    * FR2.4: Vehicle rendering should reflect their current **3D position and orientation**.
+    * FR2.5: Update the **3D scene rendering** smoothly using the library's render loop (typically tied to `requestAnimationFrame`).
+    * FR2.6: Implement basic lighting for the 3D scene to make shapes discernible.
+* **FR3: Time Simulation:**
+    * FR3.1: Implement a simulation clock that progresses from 08:00 to 20:00 at a configurable speed.
+    * FR3.2: Display the current simulation time in HH:MM format in a designated HTML overlay element.
+* **FR4: Vehicle Spawning:**
+    * FR4.1: Spawn vehicles at predefined 3D entry points/areas.
+    * FR4.2: Implement a variable spawn rate controlled by the simulation clock.
+    * FR4.3: Define peak hour intervals (e.g., 08:00-09:30, 17:00-19:00) with significantly higher spawn rates.
+    * FR4.4: Assign a random valid path (sequence of 3D nodes/segments) to each spawned vehicle.
+* **FR5: Vehicle Movement & Behavior (in 3D):**
+    * FR5.1: Vehicles shall follow their assigned path along the defined 3D road segments.
+    * FR5.2: Implement basic pathfinding suitable for the 3D node/segment graph if paths are not pre-assigned.
+    * FR5.3: Vehicles shall maintain a configurable safe following distance from the vehicle directly ahead in the same lane/segment, considering positions in 3D space. Speed should be adjusted accordingly.
+    * FR5.4: Implement a basic yielding mechanism: vehicles attempting to enter the roundabout must check for nearby circulating vehicles in their target lane (based on 3D positions/zones) and wait for a gap.
+    * FR5.5: Remove vehicles from the simulation once they reach their designated 3D exit point/area.
+* **FR6: UI & Feedback:**
+    * FR6.1: Display the total number of active vehicles currently in the simulation in a designated HTML overlay element.
+    * FR6.2: Change the **material color** of vehicle 3D models based on current speed relative to max speed (e.g., green=fast, yellow=medium, red=slow/stopped).
+
+**4. Non-Functional Requirements**
+
+* **NFR1: Performance:** The simulation should run smoothly (>20 FPS) in modern browsers supporting WebGL, managing the rendering load of the 3D scene and vehicle count.
+* **NFR2: Code Quality:** JavaScript code should be well-organized, commented, and readable, utilizing the chosen 3D library's best practices where applicable.
+* **NFR3: Usability:** The simulation should start automatically on page load.
+
+**5. Technical Constraints**
+
+* **TC1: Language/Platform:** Must use HTML, CSS, JavaScript, **and a WebGL library (Three.js is recommended)**.
+* **TC2: Environment:** Must run client-side in a web browser supporting WebGL. The WebGL library can be linked via CDN or bundled.
+* **TC3: Development Tool:** The Cursor code editor will be used for development.
+
+**6. Data Requirements**
+
+* **DR1: Map Data:** Coordinates (X, Y, Z), connectivity, and potentially basic dimension/height information for the abstracted Wongwian Yai roundabout layout, including roads and basic building shapes, suitable for 3D rendering.
+* **DR2: Simulation Parameters:** Configurable constants in the JavaScript code for start/end times, peak hour definitions, spawn rates, vehicle dimensions (3D), speeds, safe distances, simulation speed multiplier.
+

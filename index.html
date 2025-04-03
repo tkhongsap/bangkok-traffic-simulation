@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bangkok Roundabout Simulation (3D)</title>
+    <style>
+        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; margin: 0; background-color: #f0f0f0; overflow: hidden; /* Prevent scrollbars */}
+        #simulationContainer { position: relative; margin-top: 10px; /* Reduced margin */ width: 95%; /* Take up width */ }
+        /* Canvas size will be managed by JS */
+        canvas { display: block; /* Remove potential extra space */ margin: 0 auto; /* Center canvas if container is wider */ }
+        #infoPanel { padding: 10px; background-color: rgba(255, 255, 255, 0.8); border: 1px solid #ccc; border-radius: 5px; display: flex; gap: 15px; /* Adjusted gap */ flex-wrap: wrap; /* Allow wrapping on small screens */ position: absolute; top: 10px; left: 10px; z-index: 10; }
+        #infoPanel div { display: flex; align-items: center; }
+        #infoPanel span { font-weight: bold; }
+        #infoPanel label { margin-right: 5px; }
+        #infoPanel input[type="range"] { max-width: 100px; /* Limit slider width */ }
+        h1 { margin-top: 5px; margin-bottom: 5px; font-size: 1.5em;} /* Adjust heading */
+    </style>
+</head>
+<body>
+    <!-- Info panel -->
+    <div id="infoPanel">
+        <div>Time: <span id="simTime">08:00</span></div>
+        <div>Active Vehicles: <span id="vehicleCount">0</span></div>
+        <div>
+            <label for="speedSlider">Sim Speed:</label>
+            <input type="range" id="speedSlider" min="1" max="600" value="120" step="1">
+            <span id="speedValue" style="margin-left: 5px; min-width: 40px;">120x</span>
+        </div>
+    </div>
+
+    <!-- Title and Container -->
+    <h1>Bangkok Roundabout Traffic Simulation (Wongwian Yai - 3D)</h1>
+    <div id="simulationContainer">
+        <canvas id="simulationCanvas"></canvas>
+    </div>
+
+    <!-- Three.js Libraries (Keep CDN links) -->
+    <!-- IMPORTANT: Use versions compatible with module imports if possible, or ensure global THREE is used -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- OrbitControls might need manual setup if not using modules directly from CDN -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script> -->
+    <!-- Note: Importing controls as module below is cleaner if CDN supports it or using local files/build step -->
+
+    <!-- Import Map for modules like OrbitControls -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.min.js",
+                "three/examples/jsm/controls/OrbitControls.js": "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/controls/OrbitControls.js"
+            }
+        }
+    </script>
+
+    <!-- Main Simulation Script (Type Module) -->
+    <script type="module" src="js/main.js"></script>
+
+    <!-- Removed the large inline script block -->
+
+</body>
+</html> 
