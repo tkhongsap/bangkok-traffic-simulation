@@ -1,0 +1,31 @@
+body {
+    margin: 0;
+    overflow: hidden; /* Prevent scrollbars */
+    font-family: sans-serif;
+}
+
+#simulation-container {
+    width: 100vw;
+    height: 100vh;
+    display: block;
+}
+
+#ui-overlay {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    color: white;
+    background-color: rgba(0, 0, 0, 0.6);
+    padding: 8px 15px;
+    border-radius: 5px;
+    font-size: 14px;
+    z-index: 10; /* Ensure it's above the canvas */
+}
+
+#ui-overlay div {
+    margin-bottom: 5px;
+}
+
+#ui-overlay div:last-child {
+    margin-bottom: 0;
+} 
