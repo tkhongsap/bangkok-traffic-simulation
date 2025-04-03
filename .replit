@@ -2,3 +2,15 @@ modules = ["nodejs-20", "web"]
 
 [nix]
 channel = "stable-24_05"
+
+[workflows]
+runButton = "Start Simulation"
+
+[[workflows.workflow]]
+name = "Start Simulation"
+author = 36691541
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "node main.js"
