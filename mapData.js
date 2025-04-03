@@ -205,6 +205,26 @@ export const mapData = {
         { id: 'home_nw1', x: -(ROUNDABOUT_RADIUS + 145), z: -(ROUNDABOUT_RADIUS + 65), width: 8, depth: 8, height: 12, textureType: 'modern' },
         { id: 'kiosk_nw7', x: -(ROUNDABOUT_RADIUS + 160), z: -(ROUNDABOUT_RADIUS + 50), width: 4, depth: 4, height: 5, textureType: 'shop' },
         { id: 'foodtruck_nw2', x: -(ROUNDABOUT_RADIUS + 175), z: -(ROUNDABOUT_RADIUS + 45), width: 3, depth: 4, height: 4, textureType: 'traditional' },
+        
+        // Dense small buildings near roundabout - Northeast
+        { id: 'near_rb_ne1', x: ROUNDABOUT_RADIUS + 15, z: -(ROUNDABOUT_RADIUS + 10), width: 4, depth: 3, height: 5, textureType: 'shop' },
+        { id: 'near_rb_ne2', x: ROUNDABOUT_RADIUS + 25, z: -(ROUNDABOUT_RADIUS + 15), width: 3, depth: 4, height: 6, textureType: 'traditional' },
+        { id: 'near_rb_ne3', x: ROUNDABOUT_RADIUS + 35, z: -(ROUNDABOUT_RADIUS + 12), width: 5, depth: 4, height: 7, textureType: 'modern' },
+        
+        // Dense small buildings near roundabout - Southeast
+        { id: 'near_rb_se1', x: ROUNDABOUT_RADIUS + 12, z: ROUNDABOUT_RADIUS + 15, width: 4, depth: 3, height: 5, textureType: 'store' },
+        { id: 'near_rb_se2', x: ROUNDABOUT_RADIUS + 22, z: ROUNDABOUT_RADIUS + 20, width: 3, depth: 4, height: 6, textureType: 'shop' },
+        { id: 'near_rb_se3', x: ROUNDABOUT_RADIUS + 32, z: ROUNDABOUT_RADIUS + 18, width: 4, depth: 5, height: 7, textureType: 'traditional' },
+        
+        // Dense small buildings near roundabout - Southwest
+        { id: 'near_rb_sw1', x: -(ROUNDABOUT_RADIUS + 15), z: ROUNDABOUT_RADIUS + 12, width: 3, depth: 4, height: 5, textureType: 'modern' },
+        { id: 'near_rb_sw2', x: -(ROUNDABOUT_RADIUS + 25), z: ROUNDABOUT_RADIUS + 18, width: 4, depth: 3, height: 6, textureType: 'store' },
+        { id: 'near_rb_sw3', x: -(ROUNDABOUT_RADIUS + 35), z: ROUNDABOUT_RADIUS + 15, width: 5, depth: 4, height: 7, textureType: 'shop' },
+        
+        // Dense small buildings near roundabout - Northwest
+        { id: 'near_rb_nw1', x: -(ROUNDABOUT_RADIUS + 12), z: -(ROUNDABOUT_RADIUS + 15), width: 3, depth: 4, height: 5, textureType: 'traditional' },
+        { id: 'near_rb_nw2', x: -(ROUNDABOUT_RADIUS + 22), z: -(ROUNDABOUT_RADIUS + 20), width: 4, depth: 3, height: 6, textureType: 'modern' },
+        { id: 'near_rb_nw3', x: -(ROUNDABOUT_RADIUS + 32), z: -(ROUNDABOUT_RADIUS + 18), width: 5, depth: 4, height: 7, textureType: 'store' },
 
         // Additional buildings in Northeast quadrant
         ...Array.from({ length: 70 }, (_, i) => ({
