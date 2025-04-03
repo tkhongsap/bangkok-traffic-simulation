@@ -204,7 +204,51 @@ export const mapData = {
         { id: 'kiosk_nw6', x: -(ROUNDABOUT_RADIUS + 125), z: -(ROUNDABOUT_RADIUS + 55), width: 5, depth: 4, height: 6, textureType: 'traditional' },
         { id: 'home_nw1', x: -(ROUNDABOUT_RADIUS + 145), z: -(ROUNDABOUT_RADIUS + 65), width: 8, depth: 8, height: 12, textureType: 'modern' },
         { id: 'kiosk_nw7', x: -(ROUNDABOUT_RADIUS + 160), z: -(ROUNDABOUT_RADIUS + 50), width: 4, depth: 4, height: 5, textureType: 'shop' },
-        { id: 'foodtruck_nw2', x: -(ROUNDABOUT_RADIUS + 175), z: -(ROUNDABOUT_RADIUS + 45), width: 3, depth: 4, height: 4, textureType: 'traditional' }
+        { id: 'foodtruck_nw2', x: -(ROUNDABOUT_RADIUS + 175), z: -(ROUNDABOUT_RADIUS + 45), width: 3, depth: 4, height: 4, textureType: 'traditional' },
+
+        // Additional buildings in Northeast quadrant
+        ...Array.from({ length: 20 }, (_, i) => ({
+            id: `small_ne_${i + 1}`,
+            x: ROUNDABOUT_RADIUS + 80 + (i % 5) * 25,
+            z: -(ROUNDABOUT_RADIUS + 80 + Math.floor(i / 5) * 25),
+            width: 6 + Math.random() * 4,
+            depth: 6 + Math.random() * 4,
+            height: 8 + Math.random() * 12,
+            textureType: ['shop', 'traditional', 'modern', 'store'][Math.floor(Math.random() * 4)]
+        })),
+
+        // Additional buildings in Southeast quadrant
+        ...Array.from({ length: 20 }, (_, i) => ({
+            id: `small_se_${i + 1}`,
+            x: ROUNDABOUT_RADIUS + 80 + (i % 5) * 25,
+            z: ROUNDABOUT_RADIUS + 80 + Math.floor(i / 5) * 25,
+            width: 6 + Math.random() * 4,
+            depth: 6 + Math.random() * 4,
+            height: 8 + Math.random() * 12,
+            textureType: ['shop', 'traditional', 'modern', 'store'][Math.floor(Math.random() * 4)]
+        })),
+
+        // Additional buildings in Southwest quadrant
+        ...Array.from({ length: 20 }, (_, i) => ({
+            id: `small_sw_${i + 1}`,
+            x: -(ROUNDABOUT_RADIUS + 80 + (i % 5) * 25),
+            z: ROUNDABOUT_RADIUS + 80 + Math.floor(i / 5) * 25,
+            width: 6 + Math.random() * 4,
+            depth: 6 + Math.random() * 4,
+            height: 8 + Math.random() * 12,
+            textureType: ['shop', 'traditional', 'modern', 'store'][Math.floor(Math.random() * 4)]
+        })),
+
+        // Additional buildings in Northwest quadrant
+        ...Array.from({ length: 20 }, (_, i) => ({
+            id: `small_nw_${i + 1}`,
+            x: -(ROUNDABOUT_RADIUS + 80 + (i % 5) * 25),
+            z: -(ROUNDABOUT_RADIUS + 80 + Math.floor(i / 5) * 25),
+            width: 6 + Math.random() * 4,
+            depth: 6 + Math.random() * 4,
+            height: 8 + Math.random() * 12,
+            textureType: ['shop', 'traditional', 'modern', 'store'][Math.floor(Math.random() * 4)]
+        }))
     ]
     // paths: [] // Path definition might move or be generated dynamically
 }; 
