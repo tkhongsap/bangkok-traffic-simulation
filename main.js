@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 // import { OrbitControls } from 'three/addons/controls/OrbitControls.js'; // Optional: For camera control
+import { createMapGeometry } from './mapRenderer.js';
+import { updateSimulation, getSimulationTime, getVehicles } from './simulation.js';
 
 // --- Constants ---
 const ROAD_WIDTH = 8;
@@ -13,6 +15,8 @@ const MARKING_COLOR = 0xFFFFFF; // White
 // --- Basic Scene Setup ---
 let scene, camera, renderer;
 let simulationContainer;
+let lastTimestamp = 0;
+const mapGroup = new THREE.Group(); // Group to hold map meshes
 
 // --- Simulation State ---
 let simulationTime = new Date(); // We'll set this properly later
@@ -20,7 +24,6 @@ simulationTime.setHours(8, 0, 0, 0);
 const startTime = 8 * 60 * 60 * 1000; // 08:00 in milliseconds
 const endTime = 20 * 60 * 60 * 1000;   // 20:00 in milliseconds
 const simulationSpeedMultiplier = 60; // e.g., 60x real-time
-let lastTimestamp = 0;
 
 // --- UI Elements ---
 let timeDisplayElement;
@@ -60,14 +63,17 @@ const mapData = {
 
 // TODO: Store active vehicles - FR5.5, FR6.1
 const vehicles = [];
-// Group to hold map meshes for easier management
-const mapGroup = new THREE.Group();
 
+// --- Initialization Function ---
 function init() {
     // Get container and UI elements
     simulationContainer = document.getElementById('simulation-container');
     timeDisplayElement = document.getElementById('time-display');
     vehicleCountElement = document.getElementById('vehicle-count');
+
+    // ---> Set initial UI text directly <---
+    timeDisplayElement.textContent = "Time: 08:00";
+    vehicleCountElement.textContent = "Vehicles: 0";
 
     // Scene
     scene = new THREE.Scene();
@@ -107,8 +113,8 @@ function init() {
     // Add map group to scene
     scene.add(mapGroup);
 
-    // FR1.2, FR2.1, FR2.2: Create Map Geometry
-    createMapGeometry();
+    // Create Map Geometry (using imported function)
+    createMapGeometry(mapGroup);
 
     // Optional: Orbit Controls for Camera
     // const controls = new OrbitControls(camera, renderer.domElement);
@@ -127,143 +133,24 @@ function init() {
     animate(lastTimestamp);
 }
 
-// FR1.2, FR2.1, FR2.2: Render the defined map data as 3D geometry
-function createMapGeometry() {
-    console.log("Creating map geometry from mapData...");
-    mapGroup.clear(); // Clear previous geometry if any
-
-    const roadMaterial = new THREE.MeshLambertMaterial({ color: ROAD_COLOR });
-    const islandMaterial = new THREE.MeshLambertMaterial({ color: ISLAND_COLOR });
-    const markingMaterial = new THREE.LineBasicMaterial({ color: MARKING_COLOR, linewidth: 1 }); // Note: linewidth might not work on all platforms
-
-    // Central Island (circular)
-    const islandRadius = ROUNDABOUT_RADIUS - ROAD_WIDTH / 2; // Inner radius of roundabout road
-    const islandGeometry = new THREE.CylinderGeometry(islandRadius, islandRadius, 0.2, 32); // radiusTop, radiusBottom, height, radialSegments
-    const islandMesh = new THREE.Mesh(islandGeometry, islandMaterial);
-    islandMesh.position.y = 0.1; // Slightly above ground
-    // islandMesh.receiveShadow = true;
-    mapGroup.add(islandMesh);
-
-    // Roundabout Road (using a Torus)
-    const roundaboutRoadGeometry = new THREE.TorusGeometry(ROUNDABOUT_RADIUS, ROAD_WIDTH / 2, 16, 64); // radius, tubeRadius, radialSegments, tubularSegments
-    const roundaboutRoadMesh = new THREE.Mesh(roundaboutRoadGeometry, roadMaterial);
-    roundaboutRoadMesh.rotation.x = -Math.PI / 2; // Rotate to lay flat
-    roundaboutRoadMesh.position.y = 0.05; // Slightly above ground plane
-    // roundaboutRoadMesh.receiveShadow = true;
-    mapGroup.add(roundaboutRoadMesh);
-
-    // Roundabout Lane Markings (dashed circle) - Approximation
-    const numMarkingSegments = 64;
-    const markingRadius = ROUNDABOUT_RADIUS; // Center line
-    const markingPoints = [];
-    for (let i = 0; i <= numMarkingSegments; i++) {
-        const theta = (i / numMarkingSegments) * Math.PI * 2;
-        markingPoints.push(new THREE.Vector3(Math.cos(theta) * markingRadius, 0.15, Math.sin(theta) * markingRadius));
-    }
-    const markingGeometry = new THREE.BufferGeometry().setFromPoints(markingPoints);
-    const centerLine = new THREE.LineLoop(markingGeometry, markingMaterial); // Use LineLoop for closed circle
-    centerLine.computeLineDistances(); // Required for dashed lines
-    const dashedCenterLine = new THREE.LineDashedMaterial({
-        color: MARKING_COLOR,
-        linewidth: 1,
-        scale: 1,
-        dashSize: 1.5, // Length of dashes
-        gapSize: 1,   // Length of gaps
-    });
-    const dashedLineMesh = new THREE.LineSegments(markingGeometry, dashedCenterLine); // Use LineSegments for dashed
-    dashedLineMesh.computeLineDistances();
-    mapGroup.add(dashedLineMesh);
-
-
-    // Approach Roads (simple planes for now)
-    mapData.segments.forEach(segment => {
-        if (!segment.isRoundabout) {
-            const startNode = mapData.nodes[segment.from];
-            const endNode = mapData.nodes[segment.to];
-
-            const startVec = new THREE.Vector3(startNode.x, 0, startNode.z);
-            const endVec = new THREE.Vector3(endNode.x, 0, endNode.z);
-
-            const length = startVec.distanceTo(endVec);
-            const direction = new THREE.Vector3().subVectors(endVec, startVec).normalize();
-            const angle = Math.atan2(direction.x, direction.z); // Angle in XZ plane
-
-            const roadGeometry = new THREE.PlaneGeometry(ROAD_WIDTH, length);
-            const roadMesh = new THREE.Mesh(roadGeometry, roadMaterial);
-
-            // Position plane halfway between start and end nodes
-            roadMesh.position.copy(startVec).add(endVec).multiplyScalar(0.5);
-            roadMesh.position.y = 0.05; // Position slightly above ground
-
-            // Orient the plane
-            roadMesh.rotation.x = -Math.PI / 2; // Lay flat
-            roadMesh.rotation.z = angle;        // Rotate to align with direction
-
-            // roadMesh.receiveShadow = true;
-            mapGroup.add(roadMesh);
-
-             // Center Line Marking for Approach Roads
-             const linePoints = [startVec.clone(), endVec.clone()];
-             linePoints[0].y = 0.15; // Elevate slightly
-             linePoints[1].y = 0.15;
-             const lineGeometry = new THREE.BufferGeometry().setFromPoints(linePoints);
-             const lineMesh = new THREE.LineSegments(lineGeometry, dashedCenterLine); // Reuse dashed material
-             lineMesh.computeLineDistances();
-             mapGroup.add(lineMesh);
-        }
-    });
-
-     // TODO: Add basic 3D building shapes (FR2.2) based on image layout (placeholder examples)
-    const buildingMaterial = new THREE.MeshLambertMaterial({ color: 0xcccccc });
-    const buildingGeometry1 = new THREE.BoxGeometry(15, 30, 15);
-    const building1 = new THREE.Mesh(buildingGeometry1, buildingMaterial);
-    building1.position.set(ROUNDABOUT_RADIUS + 30, 15, ROUNDABOUT_RADIUS + 30);
-    // building1.castShadow = true;
-    mapGroup.add(building1);
-
-    const buildingGeometry2 = new THREE.BoxGeometry(20, 45, 10);
-    const building2 = new THREE.Mesh(buildingGeometry2, buildingMaterial);
-    building2.position.set(-(ROUNDABOUT_RADIUS + 25), 22.5, -(ROUNDABOUT_RADIUS + 20));
-    // building2.castShadow = true;
-    mapGroup.add(building2);
-
-    console.log("Map geometry created.");
-}
-
+// --- Window Resize Handler ---
 function onWindowResize() {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
-function updateSimulation(deltaTime) {
-    // --- Time Update (FR3.1) ---
-    const elapsedMillis = deltaTime * simulationSpeedMultiplier;
-    simulationTime.setTime(simulationTime.getTime() + elapsedMillis);
-
-    // Reset or stop if simulation time exceeds end time
-    if (simulationTime.getTime() > endTime) {
-        simulationTime.setTime(startTime); // Loop back for now
-        // Or potentially stop the simulation
-    }
-
-    // --- FR4: Vehicle Spawning ---
-    spawnVehicles(deltaTime);
-
-    // --- FR5: Vehicle Movement ---
-    vehicles.forEach(vehicle => vehicle.update(deltaTime));
-
-    // --- FR5.5: Remove Finished Vehicles ---
-    removeFinishedVehicles();
-}
-
+// --- UI Update Logic (FR3.2, FR6.1) ---
 function updateUI() {
-    // Update Time Display (FR3.2)
-    const hours = String(simulationTime.getHours()).padStart(2, '0');
-    const minutes = String(simulationTime.getMinutes()).padStart(2, '0');
+    const simTime = getSimulationTime();
+    const vehicles = getVehicles();
+
+    // Update Time Display
+    const hours = String(simTime.getHours()).padStart(2, '0');
+    const minutes = String(simTime.getMinutes()).padStart(2, '0');
     timeDisplayElement.textContent = `Time: ${hours}:${minutes}`;
 
-    // Update Vehicle Count (FR6.1)
+    // Update Vehicle Count
     vehicleCountElement.textContent = `Vehicles: ${vehicles.length}`;
 }
 
@@ -516,7 +403,7 @@ function removeFinishedVehicles() {
     }
 }
 
-
+// --- Animation Loop --- (Calls simulation update)
 function animate(timestamp) {
     requestAnimationFrame(animate); // Loop
 
@@ -527,8 +414,8 @@ function animate(timestamp) {
     const dt = Math.min(deltaTime, 0.1); // Use clamped delta time for updates
 
     if (dt > 0) { // Only update if time has actually passed
-        // Update simulation logic
-        updateSimulation(dt);
+        // Update simulation logic (imported function)
+        updateSimulation(dt, scene);
 
         // Update UI elements
         updateUI();
