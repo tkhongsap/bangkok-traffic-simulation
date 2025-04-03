@@ -50,25 +50,43 @@ export const mapData = {
     ],
     // FR1.1: Basic building footprints/heights
     buildings: [
-        // Northeast quadrant (mixed high-rise and commercial)
-        { id: 'condo1', x: ROUNDABOUT_RADIUS + 45, z: -(ROUNDABOUT_RADIUS + 45), width: 20, depth: 20, height: 80 },
-        { id: 'shop1', x: ROUNDABOUT_RADIUS + 65, z: -(ROUNDABOUT_RADIUS + 65), width: 15, depth: 12, height: 15 },
-        { id: 'apt1', x: ROUNDABOUT_RADIUS + 85, z: -(ROUNDABOUT_RADIUS + 45), width: 25, depth: 18, height: 45 },
+        // Northeast quadrant (dense commercial district)
+        { id: 'tower1', x: ROUNDABOUT_RADIUS + 45, z: -(ROUNDABOUT_RADIUS + 45), width: 25, depth: 25, height: 100 },
+        { id: 'office1', x: ROUNDABOUT_RADIUS + 75, z: -(ROUNDABOUT_RADIUS + 45), width: 20, depth: 20, height: 85 },
+        { id: 'mall1', x: ROUNDABOUT_RADIUS + 45, z: -(ROUNDABOUT_RADIUS + 75), width: 35, depth: 30, height: 40 },
+        { id: 'shop1', x: ROUNDABOUT_RADIUS + 85, z: -(ROUNDABOUT_RADIUS + 65), width: 15, depth: 12, height: 25 },
+        { id: 'shop2', x: ROUNDABOUT_RADIUS + 65, z: -(ROUNDABOUT_RADIUS + 90), width: 18, depth: 15, height: 20 },
+        { id: 'apt1', x: ROUNDABOUT_RADIUS + 95, z: -(ROUNDABOUT_RADIUS + 45), width: 22, depth: 20, height: 75 },
         
-        // Southeast quadrant (commercial district)
-        { id: 'mall1', x: ROUNDABOUT_RADIUS + 65, z: ROUNDABOUT_RADIUS + 45, width: 35, depth: 25, height: 30 },
-        { id: 'office1', x: ROUNDABOUT_RADIUS + 45, z: ROUNDABOUT_RADIUS + 85, width: 20, depth: 20, height: 65 },
-        { id: 'shop2', x: ROUNDABOUT_RADIUS + 85, z: ROUNDABOUT_RADIUS + 65, width: 12, depth: 15, height: 20 },
+        // Southeast quadrant (shopping district)
+        { id: 'mall2', x: ROUNDABOUT_RADIUS + 65, z: ROUNDABOUT_RADIUS + 45, width: 40, depth: 35, height: 45 },
+        { id: 'shop3', x: ROUNDABOUT_RADIUS + 45, z: ROUNDABOUT_RADIUS + 85, width: 20, depth: 15, height: 25 },
+        { id: 'shop4', x: ROUNDABOUT_RADIUS + 70, z: ROUNDABOUT_RADIUS + 85, width: 15, depth: 15, height: 20 },
+        { id: 'office2', x: ROUNDABOUT_RADIUS + 95, z: ROUNDABOUT_RADIUS + 45, width: 25, depth: 25, height: 90 },
+        { id: 'shop5', x: ROUNDABOUT_RADIUS + 85, z: ROUNDABOUT_RADIUS + 75, width: 18, depth: 12, height: 15 },
+        { id: 'apt2', x: ROUNDABOUT_RADIUS + 45, z: ROUNDABOUT_RADIUS + 115, width: 25, depth: 20, height: 65 },
         
-        // Southwest quadrant (residential area)
-        { id: 'house1', x: -(ROUNDABOUT_RADIUS + 45), z: ROUNDABOUT_RADIUS + 45, width: 10, depth: 12, height: 12 },
-        { id: 'apt2', x: -(ROUNDABOUT_RADIUS + 75), z: ROUNDABOUT_RADIUS + 65, width: 22, depth: 18, height: 35 },
-        { id: 'condo2', x: -(ROUNDABOUT_RADIUS + 95), z: ROUNDABOUT_RADIUS + 45, width: 25, depth: 20, height: 70 },
+        // Southwest quadrant (mixed residential)
+        { id: 'condo1', x: -(ROUNDABOUT_RADIUS + 45), z: ROUNDABOUT_RADIUS + 45, width: 30, depth: 25, height: 95 },
+        { id: 'apt3', x: -(ROUNDABOUT_RADIUS + 80), z: ROUNDABOUT_RADIUS + 45, width: 25, depth: 20, height: 70 },
+        { id: 'house1', x: -(ROUNDABOUT_RADIUS + 45), z: ROUNDABOUT_RADIUS + 75, width: 15, depth: 12, height: 15 },
+        { id: 'house2', x: -(ROUNDABOUT_RADIUS + 65), z: ROUNDABOUT_RADIUS + 75, width: 12, depth: 12, height: 12 },
+        { id: 'apt4', x: -(ROUNDABOUT_RADIUS + 95), z: ROUNDABOUT_RADIUS + 65, width: 28, depth: 22, height: 55 },
+        { id: 'shop6', x: -(ROUNDABOUT_RADIUS + 45), z: ROUNDABOUT_RADIUS + 95, width: 20, depth: 15, height: 25 },
         
-        // Northwest quadrant (mixed use)
-        { id: 'office2', x: -(ROUNDABOUT_RADIUS + 65), z: -(ROUNDABOUT_RADIUS + 45), width: 28, depth: 22, height: 55 },
-        { id: 'shop3', x: -(ROUNDABOUT_RADIUS + 45), z: -(ROUNDABOUT_RADIUS + 75), width: 15, depth: 12, height: 18 },
-        { id: 'apt3', x: -(ROUNDABOUT_RADIUS + 85), z: -(ROUNDABOUT_RADIUS + 65), width: 20, depth: 16, height: 40 }
+        // Northwest quadrant (business district)
+        { id: 'tower2', x: -(ROUNDABOUT_RADIUS + 65), z: -(ROUNDABOUT_RADIUS + 45), width: 30, depth: 30, height: 110 },
+        { id: 'office3', x: -(ROUNDABOUT_RADIUS + 45), z: -(ROUNDABOUT_RADIUS + 75), width: 25, depth: 20, height: 80 },
+        { id: 'mall3', x: -(ROUNDABOUT_RADIUS + 95), z: -(ROUNDABOUT_RADIUS + 45), width: 35, depth: 25, height: 45 },
+        { id: 'shop7', x: -(ROUNDABOUT_RADIUS + 75), z: -(ROUNDABOUT_RADIUS + 80), width: 15, depth: 15, height: 20 },
+        { id: 'office4', x: -(ROUNDABOUT_RADIUS + 115), z: -(ROUNDABOUT_RADIUS + 65), width: 28, depth: 22, height: 75 },
+        { id: 'shop8', x: -(ROUNDABOUT_RADIUS + 45), z: -(ROUNDABOUT_RADIUS + 105), width: 18, depth: 15, height: 25 },
+        
+        // Inner ring buildings (closer to roundabout)
+        { id: 'shop9', x: ROUNDABOUT_RADIUS + 35, z: 0, width: 12, depth: 10, height: 20 },
+        { id: 'shop10', x: -(ROUNDABOUT_RADIUS + 35), z: 0, width: 12, depth: 10, height: 20 },
+        { id: 'shop11', x: 0, z: ROUNDABOUT_RADIUS + 35, width: 10, depth: 12, height: 20 },
+        { id: 'shop12', x: 0, z: -(ROUNDABOUT_RADIUS + 35), width: 10, depth: 12, height: 20 }
     ]
     // paths: [] // Path definition might move or be generated dynamically
 }; 
