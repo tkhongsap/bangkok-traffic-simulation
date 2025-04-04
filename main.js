@@ -134,7 +134,7 @@ function updateUI(simulationTime, vehicleCount) {
     // Update Peak Hour Indicator (FR4.3)
     // Use isPeakHour from the simulation module if needed, or pass status from simulation.update
     const isPeak = simulation.isPeakHour(simulationTime); // Assuming simulation module exports this
-    
+
     if (isPeak) {
         const isMorning = simulationTime.getHours() < 12;
         peakIndicatorElement.textContent = isMorning ? 
@@ -159,13 +159,26 @@ function animate(timestamp) {
     const deltaTime = (timestamp - lastTimestamp) / 1000; // Time delta in seconds
     lastTimestamp = timestamp;
 
-    // Prevent large jumps if the tab was inactive (adjust threshold if needed)
     const dt = Math.min(deltaTime, 0.1); // Use clamped delta time for updates
 
     if (dt > 0) { // Only update if time has actually passed
         // Update simulation logic (imported function)
-        // Assuming simulation.update returns the state needed for UI
         const simState = simulation.update(dt, scene);
+
+        // Update sun position based on time
+        const hours = simState.time.getHours();
+        const minutes = simState.time.getMinutes();
+        const timeProgress = (hours + minutes / 60 - 8) / 12; // 8AM to 8PM range
+        const angle = (timeProgress * Math.PI) - (Math.PI / 2);
+        const radius = 150;
+        sun.position.x = Math.cos(angle) * radius;
+        sun.position.y = Math.max(5, Math.sin(angle) * radius);
+        sun.position.z = -50;
+
+        // Update ambient light based on sun position
+        const sunHeight = (sun.position.y / radius);
+        const ambientIntensity = Math.max(0.2, Math.min(0.7, sunHeight));
+        ambientLight.intensity = ambientIntensity;
 
         // Update UI elements using the returned state
         updateUI(simState.time, simState.vehicleCount);
@@ -182,4 +195,4 @@ function animate(timestamp) {
 init();
 
 // Removed Vehicle class, spawnVehicles, createVehicle, removeFinishedVehicles, isPeakHour, 
-// mapData definition (use import), vehicles array, and related constants. 
+// mapData definition (use import), vehicles array, and related constants.
