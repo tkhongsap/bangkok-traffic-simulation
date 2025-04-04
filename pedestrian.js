@@ -5,7 +5,7 @@ import { mapData, ROAD_WIDTH, ROUNDABOUT_RADIUS } from './mapData.js';
 export class Pedestrian {
     constructor(scene) {
         // Create pedestrian geometry (simple cylinder)
-        const geometry = new THREE.CylinderGeometry(0.3, 0.3, 1.8, 8);
+        const geometry = new THREE.CylinderGeometry(0.5, 0.5, 2.2, 8);
         const material = new THREE.MeshLambertMaterial({ color: Math.random() * 0xffffff });
         this.mesh = new THREE.Mesh(geometry, material);
         
