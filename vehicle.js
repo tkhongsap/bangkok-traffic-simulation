@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { mapData, ROUNDABOUT_RADIUS, LANE_WIDTH, ROAD_WIDTH } from './mapData.js';
+import { isPeakHour, getSimulationTime } from './simulation.js'; // Import peak hour logic
 
 // --- Vehicle Constants ---
 export const VEHICLE_LENGTH = 4;
@@ -12,6 +13,7 @@ const CABIN_LENGTH = VEHICLE_LENGTH * 0.6;
 const CABIN_OFFSET_Z = -VEHICLE_LENGTH * 0.1; // Offset cabin slightly back
 
 export const MAX_SPEED = 15; // m/s (~54 kph)
+export const MAX_SPEED_PEAK = MAX_SPEED * 0.6; // Reduced speed during peak hours (~32 kph)
 export const ACCELERATION = 3; // m/s^2
 export const DECELERATION = 8; // m/s^2 (braking)
 export const SAFE_DISTANCE = VEHICLE_LENGTH * 1.5; // Base safe following distance
@@ -250,7 +252,11 @@ export class Vehicle {
         }
 
         // --- Calculate Target Speed --- 
-        this.targetSpeed = MAX_SPEED; // Default target speed
+        const currentSimTime = getSimulationTime();
+        const inPeakHour = isPeakHour(currentSimTime);
+        let currentMaxSpeed = inPeakHour ? MAX_SPEED_PEAK : MAX_SPEED;
+        
+        this.targetSpeed = currentMaxSpeed; // Default target speed for the current time period
 
         if (this.isYielding) {
             this.targetSpeed = 0; // Stop if yielding
@@ -259,9 +265,10 @@ export class Vehicle {
             const requiredStoppingDistance = SAFE_DISTANCE + (this.currentSpeed * this.currentSpeed) / (2 * DECELERATION);
             if (distanceToVehicleAhead < requiredStoppingDistance) {
                 // Need to slow down or stop
-                this.targetSpeed = Math.max(0, vehicleAhead.currentSpeed - 1); // Try to match speed or stop
+                // Target speed should not exceed the vehicle ahead's speed or the current period's max speed
+                this.targetSpeed = Math.min(currentMaxSpeed, Math.max(0, vehicleAhead.currentSpeed - 1)); 
             } else {
-                this.targetSpeed = MAX_SPEED; // Safe distance, aim for max speed
+                this.targetSpeed = currentMaxSpeed; // Safe distance, aim for the period's max speed
             }
         }
 

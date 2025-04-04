@@ -69,7 +69,7 @@ function getCurrentSpawnInterval() {
     // Add additional randomness to create more varied traffic patterns
     // Reduced randomness to keep spawn rate high consistently
     const randomFactor = inPeakHour ? 
-        0.8 + Math.random() * 0.3 : // 0.8-1.1 during peak (less randomness = more consistent high traffic)
+        0.8 + Math.random() * 0.2 : // 0.8-1.1 during peak (less randomness = more consistent high traffic)
         0.8 + Math.random() * 0.4;  // 0.8-1.2 during normal hours
 
     interval *= randomFactor;
