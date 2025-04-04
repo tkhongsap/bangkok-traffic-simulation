@@ -27,8 +27,8 @@ export const mapData = {
         a2_in: { id: 'a2_in', x: -ROAD_WIDTH/2, y: 0, z: ROUNDABOUT_RADIUS + APPROACH_ROAD_LENGTH, isExitPoint: true }, // South inbound
         a3_out: { id: 'a3_out', x: -(ROUNDABOUT_RADIUS + APPROACH_ROAD_LENGTH), y: 0, z: ROAD_WIDTH/2, isEntryPoint: true }, // West outbound
         a3_in: { id: 'a3_in', x: -(ROUNDABOUT_RADIUS + APPROACH_ROAD_LENGTH), y: 0, z: -ROAD_WIDTH/2, isExitPoint: true }, // West inbound
-        a4_out: { id: 'a4_out', x: -ROAD_WIDTH/2, y: 0, z: -(ROUNDABOUT_RADIUS + APPROACH_ROAD_LENGTH), isEntryPoint: true }, // North outbound
-        a4_in: { id: 'a4_in', x: ROAD_WIDTH/2, y: 0, z: -(ROUNDABOUT_RADIUS + APPROACH_ROAD_LENGTH), isExitPoint: true }, // North inbound
+        a4_out: { id: 'a4_out', x: 0, y: 0, z: -(ROUNDABOUT_RADIUS + APPROACH_ROAD_LENGTH), isEntryPoint: true }, // North outbound (Aligned X)
+        a4_in: { id: 'a4_in', x: 0, y: 0, z: -(ROUNDABOUT_RADIUS + APPROACH_ROAD_LENGTH), isExitPoint: true }, // North inbound (Aligned X)
     },
     // FR1.2: Connectivity with two-way roads
     segments: [
@@ -36,12 +36,12 @@ export const mapData = {
         { id: 's_a1_out', from: 'a1_out', to: 'r1', lanes: 1, direction: 'outbound' },
         { id: 's_a2_out', from: 'a2_out', to: 'r2', lanes: 1, direction: 'outbound' },
         { id: 's_a3_out', from: 'a3_out', to: 'r3', lanes: 1, direction: 'outbound' },
-        { id: 's_a4_out', from: 'a4_out', to: 'r4', lanes: 1, direction: 'outbound' },
+        { id: 's_a4_out', from: 'a4_out', to: 'r4', lanes: 1, direction: 'outbound' }, // North outbound - Now straight
         // Approach Roads (inbound)
         { id: 's_a1_in', from: 'r1', to: 'a1_in', lanes: 1, direction: 'inbound' },
         { id: 's_a2_in', from: 'r2', to: 'a2_in', lanes: 1, direction: 'inbound' },
         { id: 's_a3_in', from: 'r3', to: 'a3_in', lanes: 1, direction: 'inbound' },
-        { id: 's_a4_in', from: 'r4', to: 'a4_in', lanes: 1, direction: 'inbound' },
+        { id: 's_a4_in', from: 'r4', to: 'a4_in', lanes: 1, direction: 'inbound' }, // North inbound - Now straight
         // Roundabout segments (clockwise)
         { id: 's_r1r2', from: 'r1', to: 'r2', isRoundabout: true, lanes: 2 },
         { id: 's_r2r3', from: 'r2', to: 'r3', isRoundabout: true, lanes: 2 },

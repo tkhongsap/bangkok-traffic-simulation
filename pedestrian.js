@@ -31,59 +31,58 @@ export class Pedestrian {
         let position;
         let isSafe = false;
 
-        // 70% chance to place near buildings, 30% chance for quadrant-based positioning
-        const useBuilding = Math.random() < 0.7;
+        // Increase building proximity to 90% (up from 70%)
+        const useBuilding = Math.random() < 0.9;
         
         while (!isSafe) {
             if (useBuilding) {
-                // Building-centered positioning (70% of pedestrians)
+                // Building-centered positioning (90% of pedestrians)
                 const buildings = mapData.buildings;
                 const building = buildings[Math.floor(Math.random() * buildings.length)];
                 
-                // Position near the building with variable distance
-                // Closer distances more likely for denser clustering
+                // Position near the building with very tight clustering
                 const angle = Math.random() * Math.PI * 2;
                 
-                // Use exponential distribution to cluster more pedestrians closer to buildings
-                // This creates higher density near buildings that falls off with distance
+                // More aggressive exponential distribution for tighter clustering
                 const distanceDistribution = Math.random();
-                const distance = 1 + (distanceDistribution * distanceDistribution) * 10; // 1-11 units, weighted toward smaller values
+                // Cube the random value for even more concentration at closer distances
+                // Now most pedestrians will be within 1-5 units of buildings
+                const distance = 1 + (distanceDistribution * distanceDistribution * distanceDistribution) * 7;
                 
                 position = {
                     x: building.x + Math.cos(angle) * distance,
                     z: building.z + Math.sin(angle) * distance
                 };
             } else {
-                // Area-based positioning (30% of pedestrians) to ensure coverage across the map
-                // Determine which quadrant
+                // Area-based positioning (only 10% of pedestrians now)
                 const quadrantChoice = Math.random();
                 
                 if (quadrantChoice < 0.25) {
                     // Southeast quadrant (positive X, positive Z)
                     position = {
-                        x: 20 + Math.random() * 40, // Positive X (east)
-                        z: 20 + Math.random() * 40  // Positive Z (south)
+                        x: 20 + Math.random() * 40, 
+                        z: 20 + Math.random() * 40  
                     };
                 } 
                 else if (quadrantChoice < 0.5) {
                     // Southwest quadrant (negative X, positive Z)
                     position = {
-                        x: -(20 + Math.random() * 40), // Negative X (west)
-                        z: 20 + Math.random() * 40     // Positive Z (south)
+                        x: -(20 + Math.random() * 40),
+                        z: 20 + Math.random() * 40    
                     };
                 }
                 else if (quadrantChoice < 0.75) {
                     // Northeast quadrant (positive X, negative Z)
                     position = {
-                        x: 20 + Math.random() * 40,  // Positive X (east)
-                        z: -(20 + Math.random() * 40) // Negative Z (north)
+                        x: 20 + Math.random() * 40,
+                        z: -(20 + Math.random() * 40)
                     };
                 }
                 else {
                     // Northwest quadrant (negative X, negative Z)
                     position = {
-                        x: -(20 + Math.random() * 40), // Negative X (west)
-                        z: -(20 + Math.random() * 40)  // Negative Z (north)
+                        x: -(20 + Math.random() * 40),
+                        z: -(20 + Math.random() * 40)
                     };
                 }
             }
