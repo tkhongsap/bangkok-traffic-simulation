@@ -226,47 +226,53 @@ export const mapData = {
         { id: 'near_rb_nw2', x: -(ROUNDABOUT_RADIUS + 22), z: -(ROUNDABOUT_RADIUS + 20), width: 4, depth: 3, height: 6, textureType: 'modern' },
         { id: 'near_rb_nw3', x: -(ROUNDABOUT_RADIUS + 32), z: -(ROUNDABOUT_RADIUS + 18), width: 5, depth: 4, height: 7, textureType: 'store' },
 
+        // More small structures near junctions
+        { id: 'junction_kiosk_ne', x: ROUNDABOUT_RADIUS + 15, z: -(ROUNDABOUT_RADIUS + 5), width: 4, depth: 4, height: 6, textureType: 'shop' },
+        { id: 'junction_kiosk_se', x: ROUNDABOUT_RADIUS + 5, z: ROUNDABOUT_RADIUS + 15, width: 4, depth: 4, height: 6, textureType: 'store' },
+        { id: 'junction_kiosk_sw', x: -(ROUNDABOUT_RADIUS + 15), z: ROUNDABOUT_RADIUS + 5, width: 4, depth: 4, height: 6, textureType: 'traditional' },
+        { id: 'junction_kiosk_nw', x: -(ROUNDABOUT_RADIUS + 5), z: -(ROUNDABOUT_RADIUS + 15), width: 4, depth: 4, height: 6, textureType: 'modern' },
+
         // Additional buildings in Northeast quadrant
-        ...Array.from({ length: 70 }, (_, i) => ({
+        ...Array.from({ length: 200 }, (_, i) => ({
             id: `small_ne_${i + 1}`,
-            x: ROUNDABOUT_RADIUS + 80 + (i % 5) * 25,
-            z: -(ROUNDABOUT_RADIUS + 80 + Math.floor(i / 5) * 25),
-            width: 6 + Math.random() * 4,
-            depth: 6 + Math.random() * 4,
-            height: 8 + Math.random() * 12,
+            x: ROUNDABOUT_RADIUS + 50 + (i % 10) * 8,
+            z: -(ROUNDABOUT_RADIUS + 50 + Math.floor(i / 10) * 8),
+            width: 5 + Math.random() * 5,
+            depth: 5 + Math.random() * 5,
+            height: 8 + Math.random() * 15,
             textureType: ['shop', 'traditional', 'modern', 'store'][Math.floor(Math.random() * 4)]
         })),
 
         // Additional buildings in Southeast quadrant
-        ...Array.from({ length: 70 }, (_, i) => ({
+        ...Array.from({ length: 200 }, (_, i) => ({
             id: `small_se_${i + 1}`,
-            x: ROUNDABOUT_RADIUS + 80 + (i % 5) * 25,
-            z: ROUNDABOUT_RADIUS + 80 + Math.floor(i / 5) * 25,
-            width: 6 + Math.random() * 4,
-            depth: 6 + Math.random() * 4,
-            height: 8 + Math.random() * 12,
+            x: ROUNDABOUT_RADIUS + 50 + (i % 10) * 8,
+            z: ROUNDABOUT_RADIUS + 50 + Math.floor(i / 10) * 8,
+            width: 5 + Math.random() * 5,
+            depth: 5 + Math.random() * 5,
+            height: 8 + Math.random() * 15,
             textureType: ['shop', 'traditional', 'modern', 'store'][Math.floor(Math.random() * 4)]
         })),
 
         // Additional buildings in Southwest quadrant
-        ...Array.from({ length: 70 }, (_, i) => ({
+        ...Array.from({ length: 200 }, (_, i) => ({
             id: `small_sw_${i + 1}`,
-            x: -(ROUNDABOUT_RADIUS + 80 + (i % 5) * 25),
-            z: ROUNDABOUT_RADIUS + 80 + Math.floor(i / 5) * 25,
-            width: 6 + Math.random() * 4,
-            depth: 6 + Math.random() * 4,
-            height: 8 + Math.random() * 12,
+            x: -(ROUNDABOUT_RADIUS + 50 + (i % 10) * 8),
+            z: ROUNDABOUT_RADIUS + 50 + Math.floor(i / 10) * 8,
+            width: 5 + Math.random() * 5,
+            depth: 5 + Math.random() * 5,
+            height: 8 + Math.random() * 15,
             textureType: ['shop', 'traditional', 'modern', 'store'][Math.floor(Math.random() * 4)]
         })),
 
         // Additional buildings in Northwest quadrant
-        ...Array.from({ length: 70 }, (_, i) => ({
+        ...Array.from({ length: 200 }, (_, i) => ({
             id: `small_nw_${i + 1}`,
-            x: -(ROUNDABOUT_RADIUS + 80 + (i % 5) * 25),
-            z: -(ROUNDABOUT_RADIUS + 80 + Math.floor(i / 5) * 25),
-            width: 6 + Math.random() * 4,
-            depth: 6 + Math.random() * 4,
-            height: 8 + Math.random() * 12,
+            x: -(ROUNDABOUT_RADIUS + 50 + (i % 10) * 8),
+            z: -(ROUNDABOUT_RADIUS + 50 + Math.floor(i / 10) * 8),
+            width: 5 + Math.random() * 5,
+            depth: 5 + Math.random() * 5,
+            height: 8 + Math.random() * 15,
             textureType: ['shop', 'traditional', 'modern', 'store'][Math.floor(Math.random() * 4)]
         }))
     ]
