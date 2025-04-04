@@ -4,8 +4,8 @@ import { Pedestrian } from './pedestrian.js';
 
 // --- Simulation State ---
 let simulationTime = new Date();
-simulationTime.setHours(8, 0, 0, 0);
-const startTimeMillis = 8 * 60 * 60 * 1000;
+simulationTime.setHours(6, 0, 0, 0);
+const startTimeMillis = 6 * 60 * 60 * 1000;
 const endTimeMillis = 20 * 60 * 60 * 1000;
 const simulationSpeedMultiplier = 600;
 
