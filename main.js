@@ -11,7 +11,7 @@ import { mapData } from './mapData.js'; // Import mapData directly if needed for
 let scene, camera, renderer;
 let simulationContainer;
 let lastTimestamp = 0;
-let sun, ambientLight;
+let ambientLight;
 const mapGroup = new THREE.Group(); // Group to hold map meshes
 
 // --- Simulation State ---
@@ -41,12 +41,7 @@ function init() {
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x87ceeb); // Sky blue background
 
-    // Add Sun
-    const sunGeometry = new THREE.SphereGeometry(5, 32, 32);
-    const sunMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
-    sun = new THREE.Mesh(sunGeometry, sunMaterial);
-    sun.position.set(80, 60, -100);
-    scene.add(sun);
+    
 
     // Add Clouds
     const cloudMaterial = new THREE.MeshLambertMaterial({ color: 0xffffff });
@@ -166,20 +161,8 @@ function animate(timestamp) {
         // Update simulation logic (imported function)
         const simState = simulation.update(dt, scene);
 
-        // Update sun position based on time
-        const hours = simState.time.getHours();
-        const minutes = simState.time.getMinutes();
-        const timeProgress = (hours + minutes / 60 - 8) / 12; // 8AM to 8PM range
-        const angle = (timeProgress * Math.PI) - (Math.PI / 2);
-        const radius = 150;
-        sun.position.x = Math.cos(angle) * radius;
-        sun.position.y = Math.max(5, Math.sin(angle) * radius);
-        sun.position.z = -50;
-
-        // Update ambient light based on sun position
-        const sunHeight = (sun.position.y / radius);
-        const ambientIntensity = Math.max(0.2, Math.min(0.7, sunHeight));
-        ambientLight.intensity = ambientIntensity;
+        // Set constant ambient light
+        ambientLight.intensity = 0.7;
 
         // Update UI elements using the returned state
         updateUI(simState.time, simState.vehicleCount);
