@@ -12,7 +12,7 @@ const simulationSpeedMultiplier = 600;
 // Store active vehicles and pedestrians
 const vehicles = [];
 const pedestrians = [];
-const NUM_PEDESTRIANS = 80; // 20 people for each quadrant * 4 quadrants
+const NUM_PEDESTRIANS = 250; // Increased from 80
 
 // FR4.2: Vehicle Spawning Configuration
 const BASE_SPAWN_INTERVAL = 1.5; // Average seconds between spawns (non-peak)

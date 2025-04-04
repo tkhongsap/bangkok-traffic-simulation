@@ -1,4 +1,3 @@
-
 import * as THREE from 'three';
 import { mapData, ROAD_WIDTH, ROUNDABOUT_RADIUS } from './mapData.js';
 
@@ -32,19 +31,62 @@ export class Pedestrian {
         let position;
         let isSafe = false;
 
+        // 70% chance to place near buildings, 30% chance for quadrant-based positioning
+        const useBuilding = Math.random() < 0.7;
+        
         while (!isSafe) {
-            // Pick a random building
-            const buildings = mapData.buildings;
-            const building = buildings[Math.floor(Math.random() * buildings.length)];
-            
-            // Position near the building
-            const angle = Math.random() * Math.PI * 2;
-            const distance = Math.random() * 5 + 2; // 2-7 units from building
-            
-            position = {
-                x: building.x + Math.cos(angle) * distance,
-                z: building.z + Math.sin(angle) * distance
-            };
+            if (useBuilding) {
+                // Building-centered positioning (70% of pedestrians)
+                const buildings = mapData.buildings;
+                const building = buildings[Math.floor(Math.random() * buildings.length)];
+                
+                // Position near the building with variable distance
+                // Closer distances more likely for denser clustering
+                const angle = Math.random() * Math.PI * 2;
+                
+                // Use exponential distribution to cluster more pedestrians closer to buildings
+                // This creates higher density near buildings that falls off with distance
+                const distanceDistribution = Math.random();
+                const distance = 1 + (distanceDistribution * distanceDistribution) * 10; // 1-11 units, weighted toward smaller values
+                
+                position = {
+                    x: building.x + Math.cos(angle) * distance,
+                    z: building.z + Math.sin(angle) * distance
+                };
+            } else {
+                // Area-based positioning (30% of pedestrians) to ensure coverage across the map
+                // Determine which quadrant
+                const quadrantChoice = Math.random();
+                
+                if (quadrantChoice < 0.25) {
+                    // Southeast quadrant (positive X, positive Z)
+                    position = {
+                        x: 20 + Math.random() * 40, // Positive X (east)
+                        z: 20 + Math.random() * 40  // Positive Z (south)
+                    };
+                } 
+                else if (quadrantChoice < 0.5) {
+                    // Southwest quadrant (negative X, positive Z)
+                    position = {
+                        x: -(20 + Math.random() * 40), // Negative X (west)
+                        z: 20 + Math.random() * 40     // Positive Z (south)
+                    };
+                }
+                else if (quadrantChoice < 0.75) {
+                    // Northeast quadrant (positive X, negative Z)
+                    position = {
+                        x: 20 + Math.random() * 40,  // Positive X (east)
+                        z: -(20 + Math.random() * 40) // Negative Z (north)
+                    };
+                }
+                else {
+                    // Northwest quadrant (negative X, negative Z)
+                    position = {
+                        x: -(20 + Math.random() * 40), // Negative X (west)
+                        z: -(20 + Math.random() * 40)  // Negative Z (north)
+                    };
+                }
+            }
             
             // Check if position is safe (away from roads)
             isSafe = this.isPositionSafe(position);
