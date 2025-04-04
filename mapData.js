@@ -33,15 +33,15 @@ export const mapData = {
     // FR1.2: Connectivity with two-way roads
     segments: [
         // Approach Roads (outbound)
-        { id: 's_a1_out', from: 'a1_out', to: 'r1', lanes: 2, direction: 'outbound' },
-        { id: 's_a2_out', from: 'a2_out', to: 'r2', lanes: 2, direction: 'outbound' },
-        { id: 's_a3_out', from: 'a3_out', to: 'r3', lanes: 2, direction: 'outbound' },
-        { id: 's_a4_out', from: 'a4_out', to: 'r4', lanes: 2, direction: 'outbound' },
+        { id: 's_a1_out', from: 'a1_out', to: 'r1', lanes: 1, direction: 'outbound' },
+        { id: 's_a2_out', from: 'a2_out', to: 'r2', lanes: 1, direction: 'outbound' },
+        { id: 's_a3_out', from: 'a3_out', to: 'r3', lanes: 1, direction: 'outbound' },
+        { id: 's_a4_out', from: 'a4_out', to: 'r4', lanes: 1, direction: 'outbound' },
         // Approach Roads (inbound)
-        { id: 's_a1_in', from: 'r1', to: 'a1_in', lanes: 2, direction: 'inbound' },
-        { id: 's_a2_in', from: 'r2', to: 'a2_in', lanes: 2, direction: 'inbound' },
-        { id: 's_a3_in', from: 'r3', to: 'a3_in', lanes: 2, direction: 'inbound' },
-        { id: 's_a4_in', from: 'r4', to: 'a4_in', lanes: 2, direction: 'inbound' },
+        { id: 's_a1_in', from: 'r1', to: 'a1_in', lanes: 1, direction: 'inbound' },
+        { id: 's_a2_in', from: 'r2', to: 'a2_in', lanes: 1, direction: 'inbound' },
+        { id: 's_a3_in', from: 'r3', to: 'a3_in', lanes: 1, direction: 'inbound' },
+        { id: 's_a4_in', from: 'r4', to: 'a4_in', lanes: 1, direction: 'inbound' },
         // Roundabout segments (clockwise)
         { id: 's_r1r2', from: 'r1', to: 'r2', isRoundabout: true, lanes: 3 },
         { id: 's_r2r3', from: 'r2', to: 'r3', isRoundabout: true, lanes: 3 },
