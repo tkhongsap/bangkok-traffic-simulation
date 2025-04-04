@@ -40,6 +40,40 @@ function init() {
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x87ceeb); // Sky blue background
 
+    // Add Sun
+    const sunGeometry = new THREE.SphereGeometry(5, 32, 32);
+    const sunMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+    const sun = new THREE.Mesh(sunGeometry, sunMaterial);
+    sun.position.set(80, 60, -100);
+    scene.add(sun);
+
+    // Add Clouds
+    const cloudMaterial = new THREE.MeshLambertMaterial({ color: 0xffffff });
+    function createCloud(x, y, z) {
+        const group = new THREE.Group();
+        const sizes = [3, 2.5, 2.8, 2.3];
+        const positions = [[0,0,0], [-2.5,0.2,0], [2.5,-0.1,0], [1.2,0.3,1]];
+        positions.forEach((pos, i) => {
+            const cloudPart = new THREE.Mesh(
+                new THREE.SphereGeometry(sizes[i], 16, 16),
+                cloudMaterial
+            );
+            cloudPart.position.set(...pos);
+            group.add(cloudPart);
+        });
+        group.position.set(x, y, z);
+        return group;
+    }
+
+    // Add multiple clouds
+    const clouds = [
+        createCloud(-60, 50, -80),
+        createCloud(40, 45, -90),
+        createCloud(-20, 55, -85),
+        createCloud(70, 48, -75)
+    ];
+    clouds.forEach(cloud => scene.add(cloud));
+
     // Camera (Perspective) - FR2.3
     const aspect = window.innerWidth / window.innerHeight;
     camera = new THREE.PerspectiveCamera(75, aspect, 0.1, 1000);
