@@ -11,6 +11,7 @@ import { mapData } from './mapData.js'; // Import mapData directly if needed for
 let scene, camera, renderer;
 let simulationContainer;
 let lastTimestamp = 0;
+let sun, ambientLight;
 const mapGroup = new THREE.Group(); // Group to hold map meshes
 
 // --- Simulation State ---
@@ -43,7 +44,7 @@ function init() {
     // Add Sun
     const sunGeometry = new THREE.SphereGeometry(5, 32, 32);
     const sunMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
-    const sun = new THREE.Mesh(sunGeometry, sunMaterial);
+    sun = new THREE.Mesh(sunGeometry, sunMaterial);
     sun.position.set(80, 60, -100);
     scene.add(sun);
 
@@ -86,7 +87,7 @@ function init() {
     simulationContainer.appendChild(renderer.domElement);
 
     // Lighting - FR2.6
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+    ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
     scene.add(ambientLight);
     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
     directionalLight.position.set(50, 100, 25);
