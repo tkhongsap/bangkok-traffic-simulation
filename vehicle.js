@@ -12,9 +12,9 @@ const CABIN_WIDTH = VEHICLE_WIDTH * 0.8;
 const CABIN_LENGTH = VEHICLE_LENGTH * 0.6;
 const CABIN_OFFSET_Z = -VEHICLE_LENGTH * 0.1; // Offset cabin slightly back
 
-export const MAX_SPEED = 15; // m/s (~54 kph)
-export const MAX_SPEED_PEAK = MAX_SPEED * 0.6; // Reduced speed during peak hours (~32 kph)
-export const ACCELERATION = 3; // m/s^2
+export const MAX_SPEED = 25; // m/s (~90 kph)
+export const MAX_SPEED_PEAK = MAX_SPEED * 0.7; // Reduced speed during peak hours (~63 kph)
+export const ACCELERATION = 5; // m/s^2
 export const DECELERATION = 8; // m/s^2 (braking)
 export const SAFE_DISTANCE = VEHICLE_LENGTH * 1.5; // Base safe following distance
 const MIN_SPEED = 0.5; // Speed below which vehicle is considered stopped for yielding/following
