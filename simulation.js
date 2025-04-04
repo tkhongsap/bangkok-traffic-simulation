@@ -6,7 +6,7 @@ let simulationTime = new Date();
 simulationTime.setHours(8, 0, 0, 0);
 const startTimeMillis = 8 * 60 * 60 * 1000;
 const endTimeMillis = 20 * 60 * 60 * 1000;
-const simulationSpeedMultiplier = 180;
+const simulationSpeedMultiplier = 600;
 
 // Store active vehicles
 const vehicles = [];
