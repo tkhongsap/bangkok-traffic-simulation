@@ -30,22 +30,51 @@ export class Vehicle {
         // FR2.3: Representation as simple 3D geometric shapes (boxes) - Body and Cabin
         this.vehicleGroup = new THREE.Group();
 
-        // Vehicle Body
+        // Vehicle Body - More curved look
         const bodyGeometry = new THREE.BoxGeometry(VEHICLE_LENGTH, BODY_HEIGHT, VEHICLE_WIDTH);
-        // FR6.2: Initial color - Green for moving (applied to body)
+        bodyGeometry.vertices.forEach(vertex => {
+            if (vertex.y > 0) {
+                vertex.y *= 1.2; // Slight curve on top
+            }
+        });
         this.bodyMaterial = new THREE.MeshLambertMaterial({ color: 0x00ff00 });
         const bodyMesh = new THREE.Mesh(bodyGeometry, this.bodyMaterial);
-        bodyMesh.position.y = BODY_HEIGHT / 2; // Position body geometry base at y=0
+        bodyMesh.position.y = BODY_HEIGHT / 2;
 
-        // Vehicle Cabin
-        const cabinGeometry = new THREE.BoxGeometry(CABIN_LENGTH, CABIN_HEIGHT, CABIN_WIDTH);
-        const cabinMaterial = new THREE.MeshLambertMaterial({ color: 0x555555 }); // Dark grey cabin
+        // Vehicle Cabin - More streamlined
+        const cabinGeometry = new THREE.BoxGeometry(CABIN_LENGTH * 0.8, CABIN_HEIGHT * 1.2, CABIN_WIDTH * 0.9);
+        const cabinMaterial = new THREE.MeshLambertMaterial({ color: 0x333333 }); // Darker cabin
         const cabinMesh = new THREE.Mesh(cabinGeometry, cabinMaterial);
-        // Position cabin on top of the body, slightly offset back
         cabinMesh.position.set(CABIN_OFFSET_Z, BODY_HEIGHT + CABIN_HEIGHT / 2, 0);
+
+        // Add wheels
+        const wheelGeometry = new THREE.CylinderGeometry(0.4, 0.4, 0.3, 8);
+        const wheelMaterial = new THREE.MeshLambertMaterial({ color: 0x111111 });
+        
+        // Front wheels
+        const wheelFL = new THREE.Mesh(wheelGeometry, wheelMaterial);
+        wheelFL.rotation.z = Math.PI / 2;
+        wheelFL.position.set(VEHICLE_LENGTH/3, 0.4, VEHICLE_WIDTH/2);
+        
+        const wheelFR = new THREE.Mesh(wheelGeometry, wheelMaterial);
+        wheelFR.rotation.z = Math.PI / 2;
+        wheelFR.position.set(VEHICLE_LENGTH/3, 0.4, -VEHICLE_WIDTH/2);
+        
+        // Rear wheels
+        const wheelRL = new THREE.Mesh(wheelGeometry, wheelMaterial);
+        wheelRL.rotation.z = Math.PI / 2;
+        wheelRL.position.set(-VEHICLE_LENGTH/3, 0.4, VEHICLE_WIDTH/2);
+        
+        const wheelRR = new THREE.Mesh(wheelGeometry, wheelMaterial);
+        wheelRR.rotation.z = Math.PI / 2;
+        wheelRR.position.set(-VEHICLE_LENGTH/3, 0.4, -VEHICLE_WIDTH/2);
 
         this.vehicleGroup.add(bodyMesh);
         this.vehicleGroup.add(cabinMesh);
+        this.vehicleGroup.add(wheelFL);
+        this.vehicleGroup.add(wheelFR);
+        this.vehicleGroup.add(wheelRL);
+        this.vehicleGroup.add(wheelRR);
 
         const startNode = mapData.nodes[startNodeId];
         if (!startNode) {

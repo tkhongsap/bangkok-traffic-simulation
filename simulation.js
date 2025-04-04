@@ -15,8 +15,8 @@ const pedestrians = [];
 const NUM_PEDESTRIANS = 250; // Increased from 80
 
 // FR4.2: Vehicle Spawning Configuration
-const BASE_SPAWN_INTERVAL = 0.1; // Average seconds between spawns (non-peak)
-const PEAK_HOUR_MULTIPLIER = 0.02; // Interval multiplier during peak (lower = more frequent)
+const BASE_SPAWN_INTERVAL = 0.05; // Faster spawning (twice as frequent)
+const PEAK_HOUR_MULTIPLIER = 0.01; // Even more vehicles during peak hours
 let timeSinceLastSpawn = {}; // { [nodeId: string]: number }
 
 // FR4.3: Define peak hour intervals exactly as specified in requirements
