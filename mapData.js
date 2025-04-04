@@ -43,10 +43,10 @@ export const mapData = {
         { id: 's_a3_in', from: 'r3', to: 'a3_in', lanes: 1, direction: 'inbound' },
         { id: 's_a4_in', from: 'r4', to: 'a4_in', lanes: 1, direction: 'inbound' },
         // Roundabout segments (clockwise)
-        { id: 's_r1r2', from: 'r1', to: 'r2', isRoundabout: true, lanes: 3 },
-        { id: 's_r2r3', from: 'r2', to: 'r3', isRoundabout: true, lanes: 3 },
-        { id: 's_r3r4', from: 'r3', to: 'r4', isRoundabout: true, lanes: 3 },
-        { id: 's_r4r1', from: 'r4', to: 'r1', isRoundabout: true, lanes: 3 },
+        { id: 's_r1r2', from: 'r1', to: 'r2', isRoundabout: true, lanes: 2 },
+        { id: 's_r2r3', from: 'r2', to: 'r3', isRoundabout: true, lanes: 2 },
+        { id: 's_r3r4', from: 'r3', to: 'r4', isRoundabout: true, lanes: 2 },
+        { id: 's_r4r1', from: 'r4', to: 'r1', isRoundabout: true, lanes: 2 },
     ],
     // FR1.1: Basic building footprints/heights
     buildings: [
