@@ -1,5 +1,6 @@
 import { mapData } from './mapData.js';
 import { Vehicle } from './vehicle.js';
+import { Pedestrian } from './pedestrian.js';
 
 // --- Simulation State ---
 let simulationTime = new Date();
@@ -8,8 +9,10 @@ const startTimeMillis = 8 * 60 * 60 * 1000;
 const endTimeMillis = 20 * 60 * 60 * 1000;
 const simulationSpeedMultiplier = 600;
 
-// Store active vehicles
+// Store active vehicles and pedestrians
 const vehicles = [];
+const pedestrians = [];
+const NUM_PEDESTRIANS = 200; // Number of pedestrians to simulate
 
 // FR4.2: Vehicle Spawning Configuration
 const BASE_SPAWN_INTERVAL = 1.5; // Average seconds between spawns (non-peak)
@@ -122,6 +125,16 @@ export function update(deltaTime, scene) {
 
     // 4. Clean up vehicles that have completed their path
     cleanupVehicles();
+
+    // 5. Initialize pedestrians if needed
+    if (pedestrians.length === 0) {
+        for (let i = 0; i < NUM_PEDESTRIANS; i++) {
+            pedestrians.push(new Pedestrian(scene));
+        }
+    }
+
+    // 6. Update pedestrians
+    pedestrians.forEach(pedestrian => pedestrian.update(deltaTime));
 
     return {
         time: simulationTime,
