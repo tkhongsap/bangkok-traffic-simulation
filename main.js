@@ -45,6 +45,8 @@ function init() {
 
     // Add Clouds
     const cloudMaterial = new THREE.MeshLambertMaterial({ color: 0xffffff });
+    const clouds = [];
+    
     function createCloud(x, y, z) {
         const group = new THREE.Group();
         const sizes = [3, 2.5, 2.8, 2.3];
@@ -58,17 +60,16 @@ function init() {
             group.add(cloudPart);
         });
         group.position.set(x, y, z);
+        clouds.push(group);
+        scene.add(group);
         return group;
     }
 
     // Add multiple clouds
-    const clouds = [
-        createCloud(-60, 50, -80),
-        createCloud(40, 45, -90),
-        createCloud(-20, 55, -85),
-        createCloud(70, 48, -75)
-    ];
-    clouds.forEach(cloud => scene.add(cloud));
+    createCloud(-60, 50, -80);
+    createCloud(40, 45, -90);
+    createCloud(-20, 55, -85);
+    createCloud(70, 48, -75);
 
     // Camera (Perspective) - FR2.3
     const aspect = window.innerWidth / window.innerHeight;
