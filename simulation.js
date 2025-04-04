@@ -15,8 +15,8 @@ const pedestrians = [];
 const NUM_PEDESTRIANS = 250; // Increased from 80
 
 // FR4.2: Vehicle Spawning Configuration
-const BASE_SPAWN_INTERVAL = 1.5; // Average seconds between spawns (non-peak)
-const PEAK_HOUR_MULTIPLIER = 0.1; // Interval multiplier during peak (lower = more frequent)
+const BASE_SPAWN_INTERVAL = 0.5; // Average seconds between spawns (non-peak)
+const PEAK_HOUR_MULTIPLIER = 0.05; // Interval multiplier during peak (lower = more frequent)
 let timeSinceLastSpawn = {}; // { [nodeId: string]: number }
 
 // FR4.3: Define peak hour intervals exactly as specified in requirements
@@ -170,7 +170,7 @@ function spawnVehicle(deltaTime, scene) {
         // Spawn vehicle if enough time has passed (reduced threshold to 60%)
         if (timeSinceLastSpawn[nodeId] >= currentInterval * 0.6) {
             // Increased chance to spawn (from 30% to 70%)
-            const shouldSpawn = timeSinceLastSpawn[nodeId] >= currentInterval * 0.75 || Math.random() < 0.7;
+            const shouldSpawn = timeSinceLastSpawn[nodeId] >= currentInterval * 0.5 || Math.random() < 0.9;
 
             if (shouldSpawn) {
                 const vehicle = new Vehicle(nodeId, scene);
