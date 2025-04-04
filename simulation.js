@@ -167,10 +167,10 @@ function spawnVehicle(deltaTime, scene) {
         // Update time since last spawn
         timeSinceLastSpawn[nodeId] += deltaTime;
 
-        // Spawn vehicle if enough time has passed (reduced threshold to 60%)
-        if (timeSinceLastSpawn[nodeId] >= currentInterval * 0.6) {
-            // Increased chance to spawn (from 30% to 70%)
-            const shouldSpawn = timeSinceLastSpawn[nodeId] >= currentInterval * 0.5 || Math.random() < 0.9;
+        // Spawn vehicle if enough time has passed (reduced threshold to 40%)
+        if (timeSinceLastSpawn[nodeId] >= currentInterval * 0.4) {
+            // Very high chance to spawn
+            const shouldSpawn = timeSinceLastSpawn[nodeId] >= currentInterval * 0.3 || Math.random() < 0.95;
 
             if (shouldSpawn) {
                 const vehicle = new Vehicle(nodeId, scene);
