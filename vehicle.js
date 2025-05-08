@@ -1,12 +1,20 @@
 import * as THREE from 'three';
 import { mapData, ROUNDABOUT_RADIUS, LANE_WIDTH, ROAD_WIDTH } from './mapData.js';
+import { isPeakHour, getSimulationTime } from './simulation.js'; // Import peak hour logic
 
 // --- Vehicle Constants ---
 export const VEHICLE_LENGTH = 4;
 export const VEHICLE_WIDTH = 2;
-export const VEHICLE_HEIGHT = 1.5;
-export const MAX_SPEED = 15; // m/s (~54 kph)
-export const ACCELERATION = 3; // m/s^2
+// Adjusted height for body/cabin split
+const BODY_HEIGHT = 0.8;
+const CABIN_HEIGHT = 0.7;
+const CABIN_WIDTH = VEHICLE_WIDTH * 0.8;
+const CABIN_LENGTH = VEHICLE_LENGTH * 0.6;
+const CABIN_OFFSET_Z = -VEHICLE_LENGTH * 0.1; // Offset cabin slightly back
+
+export const MAX_SPEED = 25; // m/s (~90 kph)
+export const MAX_SPEED_PEAK = MAX_SPEED * 0.7; // Reduced speed during peak hours (~63 kph)
+export const ACCELERATION = 5; // m/s^2
 export const DECELERATION = 8; // m/s^2 (braking)
 export const SAFE_DISTANCE = VEHICLE_LENGTH * 1.5; // Base safe following distance
 const MIN_SPEED = 0.5; // Speed below which vehicle is considered stopped for yielding/following
@@ -20,10 +28,54 @@ export class Vehicle {
         this.scene = scene;
         this.direction = direction; // 'inbound' (to roundabout) or 'outbound' (from roundabout)
 
-        // Create 3D representation
-        this.geometry = new THREE.BoxGeometry(VEHICLE_LENGTH, VEHICLE_HEIGHT, VEHICLE_WIDTH);
-        this.material = new THREE.MeshLambertMaterial({ color: 0x00ff00 });
-        this.mesh = new THREE.Mesh(this.geometry, this.material);
+        // FR2.3: Representation as simple 3D geometric shapes (boxes) - Body and Cabin
+        this.vehicleGroup = new THREE.Group();
+
+        // Vehicle Body - More curved look
+        const bodyGeometry = new THREE.BoxGeometry(VEHICLE_LENGTH, BODY_HEIGHT, VEHICLE_WIDTH);
+        bodyGeometry.vertices.forEach(vertex => {
+            if (vertex.y > 0) {
+                vertex.y *= 1.2; // Slight curve on top
+            }
+        });
+        this.bodyMaterial = new THREE.MeshLambertMaterial({ color: 0x00ff00 });
+        const bodyMesh = new THREE.Mesh(bodyGeometry, this.bodyMaterial);
+        bodyMesh.position.y = BODY_HEIGHT / 2;
+
+        // Vehicle Cabin - More streamlined
+        const cabinGeometry = new THREE.BoxGeometry(CABIN_LENGTH * 0.8, CABIN_HEIGHT * 1.2, CABIN_WIDTH * 0.9);
+        const cabinMaterial = new THREE.MeshLambertMaterial({ color: 0x333333 }); // Darker cabin
+        const cabinMesh = new THREE.Mesh(cabinGeometry, cabinMaterial);
+        cabinMesh.position.set(CABIN_OFFSET_Z, BODY_HEIGHT + CABIN_HEIGHT / 2, 0);
+
+        // Add wheels
+        const wheelGeometry = new THREE.CylinderGeometry(0.4, 0.4, 0.3, 8);
+        const wheelMaterial = new THREE.MeshLambertMaterial({ color: 0x111111 });
+        
+        // Front wheels
+        const wheelFL = new THREE.Mesh(wheelGeometry, wheelMaterial);
+        wheelFL.rotation.z = Math.PI / 2;
+        wheelFL.position.set(VEHICLE_LENGTH/3, 0.4, VEHICLE_WIDTH/2);
+        
+        const wheelFR = new THREE.Mesh(wheelGeometry, wheelMaterial);
+        wheelFR.rotation.z = Math.PI / 2;
+        wheelFR.position.set(VEHICLE_LENGTH/3, 0.4, -VEHICLE_WIDTH/2);
+        
+        // Rear wheels
+        const wheelRL = new THREE.Mesh(wheelGeometry, wheelMaterial);
+        wheelRL.rotation.z = Math.PI / 2;
+        wheelRL.position.set(-VEHICLE_LENGTH/3, 0.4, VEHICLE_WIDTH/2);
+        
+        const wheelRR = new THREE.Mesh(wheelGeometry, wheelMaterial);
+        wheelRR.rotation.z = Math.PI / 2;
+        wheelRR.position.set(-VEHICLE_LENGTH/3, 0.4, -VEHICLE_WIDTH/2);
+
+        this.vehicleGroup.add(bodyMesh);
+        this.vehicleGroup.add(cabinMesh);
+        this.vehicleGroup.add(wheelFL);
+        this.vehicleGroup.add(wheelFR);
+        this.vehicleGroup.add(wheelRL);
+        this.vehicleGroup.add(wheelRR);
 
         // Get the node where this vehicle starts
         const node = mapData.nodes[nodeId];
@@ -36,11 +88,20 @@ export class Vehicle {
         // Position the vehicle at the starting node
         this.mesh.position.set(node.x, VEHICLE_HEIGHT / 2, node.z);
 
-        // Assign a lane (Thai traffic: drive on the left)
-        // Lane 0 = Inside/left lane, Lane 1 = Outside/right lane
-        if (direction === 'inbound') {
-            // For inbound: Lane 0 is preferred (closer to center divider)
-            this.laneIndex = Math.random() < 0.7 ? 0 : 1;
+        // Set initial position for the group
+        this.vehicleGroup.position.set(startNode.x, 0, startNode.z); // Group base at y=0
+
+        // FR4.4: Assign a random valid path
+        this.path = this.generateSimplePath(startNodeId);
+        this.currentSegmentIndex = 0;
+        this.progressOnSegment = 0; // Normalized progress (0 to 1)
+        this.currentSpeed = 0; // Current speed m/s
+        this.targetSpeed = MAX_SPEED;
+        this.markForRemoval = false; // Flag for cleanup
+        this.isYielding = false; // FR5.4: Flag for yielding state
+
+        if (this.path && this.path.length > 0) {
+            this.scene.add(this.vehicleGroup); // Add group to the scene
         } else {
             // For outbound: Lane 1 is preferred (closer to center divider)
             this.laneIndex = Math.random() < 0.7 ? 1 : 0;
@@ -306,7 +367,11 @@ export class Vehicle {
         }
 
         // --- Calculate Target Speed --- 
-        this.targetSpeed = MAX_SPEED; // Default target speed
+        const currentSimTime = getSimulationTime();
+        const inPeakHour = isPeakHour(currentSimTime);
+        let currentMaxSpeed = inPeakHour ? MAX_SPEED_PEAK : MAX_SPEED;
+        
+        this.targetSpeed = currentMaxSpeed; // Default target speed for the current time period
 
         if (this.isYielding) {
             this.targetSpeed = 0; // Stop if yielding
@@ -315,9 +380,10 @@ export class Vehicle {
             const requiredStoppingDistance = SAFE_DISTANCE + (this.currentSpeed * this.currentSpeed) / (2 * DECELERATION);
             if (distanceToVehicleAhead < requiredStoppingDistance) {
                 // Need to slow down or stop
-                this.targetSpeed = Math.max(0, vehicleAhead.currentSpeed - 1); // Try to match speed or stop
+                // Target speed should not exceed the vehicle ahead's speed or the current period's max speed
+                this.targetSpeed = Math.min(currentMaxSpeed, Math.max(0, vehicleAhead.currentSpeed - 1)); 
             } else {
-                this.targetSpeed = MAX_SPEED; // Safe distance, aim for max speed
+                this.targetSpeed = currentMaxSpeed; // Safe distance, aim for the period's max speed
             }
         }
 
@@ -347,14 +413,14 @@ export class Vehicle {
 
             targetCenterPosition = new THREE.Vector3(
                 Math.cos(currentAngle) * radius,
-                VEHICLE_HEIGHT / 2,
+                0,
                 Math.sin(currentAngle) * radius
             );
             direction.set(-Math.sin(currentAngle), 0, Math.cos(currentAngle)).normalize();
             perpendicular.set(Math.cos(currentAngle), 0, Math.sin(currentAngle)).normalize();
         } else {
             targetCenterPosition = new THREE.Vector3().lerpVectors(startVec, endVec, this.progressOnSegment);
-            targetCenterPosition.y = VEHICLE_HEIGHT / 2;
+            targetCenterPosition.y = 0;
             direction.subVectors(endVec, startVec).normalize();
             perpendicular.set(-direction.z, 0, direction.x).normalize();
         }
@@ -365,22 +431,21 @@ export class Vehicle {
         finalTargetPosition = targetCenterPosition.clone().add(offsetVector);
 
         // Update mesh position
-        this.mesh.position.copy(finalTargetPosition);
+        this.vehicleGroup.position.copy(finalTargetPosition);
 
         // Update mesh rotation
         if (direction && direction.lengthSq() > 0.001) {
             const angle = Math.atan2(direction.x, direction.z);
-            this.mesh.rotation.y = angle;
+            this.vehicleGroup.rotation.y = angle;
         }
 
         // --- FR6.2: Update color based on speed --- 
-        const speedRatio = this.currentSpeed / MAX_SPEED;
-        if (this.isYielding || this.currentSpeed < MIN_SPEED) {
-            this.material.color.setHex(0xff0000); // Red (stopped/yielding)
-        } else if (speedRatio < 0.6) {
-            this.material.color.setHex(0xffff00); // Yellow (medium)
+        if (this.currentSpeed < MIN_SPEED) {
+            this.bodyMaterial.color.setHex(0xff0000); // Red for stopped/slow
+        } else if (this.currentSpeed < MAX_SPEED * 0.7) {
+            this.bodyMaterial.color.setHex(0xffff00); // Yellow for medium speed
         } else {
-            this.material.color.setHex(0x00ff00); // Green (fast)
+            this.bodyMaterial.color.setHex(0x00ff00); // Green for fast
         }
 
         // --- Move to Next Segment --- 
@@ -418,50 +483,105 @@ export class Vehicle {
         }
     }
 
-    // Helper to recalculate and set position based on current segment/progress/lane
+    // FR5.1: Update vehicle position and orientation based on progress
     updatePositionForCurrentProgress() {
-         if (this.markForRemoval || !this.path || this.currentSegmentIndex >= this.path.length) {
-             return;
-         }
-         const segment = this.path[this.currentSegmentIndex];
-         const startNode = mapData.nodes[segment.from];
-         const endNode = mapData.nodes[segment.to];
-         if (!startNode || !endNode) return;
+        if (!this.path || this.currentSegmentIndex >= this.path.length) return;
 
-         const startVec = new THREE.Vector3(startNode.x, 0, startNode.z);
-         const endVec = new THREE.Vector3(endNode.x, 0, endNode.z);
-         let targetCenterPosition;
-         let perpendicular = new THREE.Vector3();
+        const segment = this.path[this.currentSegmentIndex];
+        const startNode = mapData.nodes[segment.from];
+        const endNode = mapData.nodes[segment.to];
+
+        if (!startNode || !endNode) return; // Already handled in update
+
+        const startVec = new THREE.Vector3(startNode.x, 0, startNode.z);
+        const endVec = new THREE.Vector3(endNode.x, 0, endNode.z);
+        let targetCenterPosition;
+        let direction = new THREE.Vector3();
+        let perpendicular = new THREE.Vector3();
+
+        // Lane offset calculation
+        const numLanes = segment.lanes || 1;
+        // Calculate offset from centerline based on lane index
+        // Lane 0 = innermost/rightmost, Lane N-1 = outermost/leftmost
+        const laneOffsetDistance = -(ROAD_WIDTH / 2) + (LANE_WIDTH / 2) + (this.laneIndex * LANE_WIDTH);
+
 
         if (segment.isRoundabout) {
-            const radius = ROUNDABOUT_RADIUS;
+            const radius = ROUNDABOUT_RADIUS; // Assuming center at origin
             const angleStart = Math.atan2(startVec.z, startVec.x);
             let angleEnd = Math.atan2(endVec.z, endVec.x);
-            if (angleEnd < angleStart) angleEnd += Math.PI * 2;
+
+            // Handle angle wrap around (e.g., crossing from +PI to -PI)
+             // Ensure angleEnd is always greater than angleStart for clockwise motion
+            while (angleEnd <= angleStart) {
+                 angleEnd += Math.PI * 2;
+            }
+
             const angleTotal = angleEnd - angleStart;
             const currentAngle = angleStart + angleTotal * this.progressOnSegment;
-            targetCenterPosition = new THREE.Vector3(Math.cos(currentAngle) * radius, VEHICLE_HEIGHT / 2, Math.sin(currentAngle) * radius);
-             perpendicular.set(Math.cos(currentAngle), 0, Math.sin(currentAngle)).normalize(); 
-        } else {
+
+            // Center position on the roundabout arc
+            const centerRadius = radius; // Centerline radius
+            targetCenterPosition = new THREE.Vector3(
+                Math.cos(currentAngle) * centerRadius,
+                0,
+                Math.sin(currentAngle) * centerRadius
+            );
+
+            // Direction tangent to the circle
+            direction.set(
+                -Math.sin(currentAngle),
+                0,
+                Math.cos(currentAngle)
+            ).normalize();
+
+            // Perpendicular towards the center (for lane offset)
+            perpendicular.set(
+                -Math.cos(currentAngle),
+                 0,
+                 -Math.sin(currentAngle)
+            ).normalize();
+
+        } else { // Straight segment
+            direction.subVectors(endVec, startVec).normalize();
             targetCenterPosition = new THREE.Vector3().lerpVectors(startVec, endVec, this.progressOnSegment);
-            targetCenterPosition.y = VEHICLE_HEIGHT / 2;
-            const direction = new THREE.Vector3().subVectors(endVec, startVec).normalize();
-            perpendicular.set(-direction.z, 0, direction.x).normalize(); 
+
+            // Perpendicular vector for lane offset
+            perpendicular.set(-direction.z, 0, direction.x); // Rotate 90 degrees in XZ plane
         }
 
-        const numLanes = segment.lanes || 2;
-        const laneOffsetDistance = (ROAD_WIDTH / 2) - LANE_WIDTH * (this.laneIndex + 0.5);
-        const offsetVector = perpendicular.clone().multiplyScalar(laneOffsetDistance);
-        const finalPosition = targetCenterPosition.clone().add(offsetVector);
-        this.mesh.position.copy(finalPosition);
+        // Apply lane offset
+        const laneOffsetVector = perpendicular.multiplyScalar(laneOffsetDistance);
+        const targetPosition = targetCenterPosition.add(laneOffsetVector);
+
+
+        // Set vehicle position (group base is at y=0)
+        this.vehicleGroup.position.set(targetPosition.x, 0, targetPosition.z);
+
+        // Set vehicle orientation
+        const lookAtPosition = targetPosition.clone().add(direction); // Point one unit along the direction vector
+        this.vehicleGroup.lookAt(lookAtPosition.x, 0, lookAtPosition.z);
     }
 
-
+    // FR5.5: Clean up resources
     dispose() {
-        if (this.scene && this.mesh) {
-            this.scene.remove(this.mesh);
+        if (this.vehicleGroup && this.scene) {
+            this.scene.remove(this.vehicleGroup);
         }
-        this.geometry?.dispose();
-        this.material?.dispose();
+        // Dispose geometries and materials if they are unique per vehicle
+        // If shared, disposal might be handled elsewhere
+        this.bodyMaterial?.dispose();
+        // Dispose geometries if needed (assuming they are created per vehicle)
+        this.vehicleGroup?.traverse(child => {
+            if (child instanceof THREE.Mesh) {
+                child.geometry?.dispose();
+                // Dispose cabin material if it's unique
+                if (child.material !== this.bodyMaterial) {
+                     child.material?.dispose();
+                }
+            }
+        });
+        this.path = null; // Release path data
+        console.log(`Vehicle ${this.id} disposed.`);
     }
 } 

@@ -11,6 +11,7 @@ import { mapData } from './mapData.js'; // Import mapData directly if needed for
 let scene, camera, renderer;
 let simulationContainer;
 let lastTimestamp = 0;
+let ambientLight;
 const mapGroup = new THREE.Group(); // Group to hold map meshes
 
 // --- Simulation State ---
@@ -40,6 +41,36 @@ function init() {
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x87ceeb); // Sky blue background
 
+    
+
+    // Add Clouds
+    const cloudMaterial = new THREE.MeshLambertMaterial({ color: 0xffffff });
+    const clouds = [];
+    
+    function createCloud(x, y, z) {
+        const group = new THREE.Group();
+        const sizes = [3, 2.5, 2.8, 2.3];
+        const positions = [[0,0,0], [-2.5,0.2,0], [2.5,-0.1,0], [1.2,0.3,1]];
+        positions.forEach((pos, i) => {
+            const cloudPart = new THREE.Mesh(
+                new THREE.SphereGeometry(sizes[i], 16, 16),
+                cloudMaterial
+            );
+            cloudPart.position.set(...pos);
+            group.add(cloudPart);
+        });
+        group.position.set(x, y, z);
+        clouds.push(group);
+        scene.add(group);
+        return group;
+    }
+
+    // Add multiple clouds
+    createCloud(-60, 50, -80);
+    createCloud(40, 45, -90);
+    createCloud(-20, 55, -85);
+    createCloud(70, 48, -75);
+
     // Camera (Perspective) - FR2.3
     const aspect = window.innerWidth / window.innerHeight;
     camera = new THREE.PerspectiveCamera(75, aspect, 0.1, 1000);
@@ -52,7 +83,7 @@ function init() {
     simulationContainer.appendChild(renderer.domElement);
 
     // Lighting - FR2.6
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+    ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
     scene.add(ambientLight);
     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
     directionalLight.position.set(50, 100, 25);
@@ -100,7 +131,7 @@ function updateUI(simulationTime, vehicleCount) {
     // Update Peak Hour Indicator (FR4.3)
     // Use isPeakHour from the simulation module if needed, or pass status from simulation.update
     const isPeak = simulation.isPeakHour(simulationTime); // Assuming simulation module exports this
-    
+
     if (isPeak) {
         const isMorning = simulationTime.getHours() < 12;
         peakIndicatorElement.textContent = isMorning ? 
@@ -125,13 +156,14 @@ function animate(timestamp) {
     const deltaTime = (timestamp - lastTimestamp) / 1000; // Time delta in seconds
     lastTimestamp = timestamp;
 
-    // Prevent large jumps if the tab was inactive (adjust threshold if needed)
     const dt = Math.min(deltaTime, 0.1); // Use clamped delta time for updates
 
     if (dt > 0) { // Only update if time has actually passed
         // Update simulation logic (imported function)
-        // Assuming simulation.update returns the state needed for UI
         const simState = simulation.update(dt, scene);
+
+        // Set constant ambient light
+        ambientLight.intensity = 0.7;
 
         // Update UI elements using the returned state
         updateUI(simState.time, simState.vehicleCount);
@@ -148,4 +180,4 @@ function animate(timestamp) {
 init();
 
 // Removed Vehicle class, spawnVehicles, createVehicle, removeFinishedVehicles, isPeakHour, 
-// mapData definition (use import), vehicles array, and related constants. 
+// mapData definition (use import), vehicles array, and related constants.

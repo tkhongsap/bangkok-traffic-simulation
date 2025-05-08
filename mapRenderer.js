@@ -4,7 +4,82 @@ import { mapData, ROAD_WIDTH, ROUNDABOUT_RADIUS, ROAD_COLOR, ISLAND_COLOR, MARKI
 // Materials (can be shared)
 const roadMaterial = new THREE.MeshLambertMaterial({ color: ROAD_COLOR });
 const islandMaterial = new THREE.MeshLambertMaterial({ color: ISLAND_COLOR });
-const buildingMaterial = new THREE.MeshLambertMaterial({ color: BUILDING_COLOR });
+
+// Create building materials with window patterns
+function createBuildingMaterial(color = BUILDING_COLOR, textureType = 'default') {
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    canvas.width = 512;
+    canvas.height = 512;
+
+    // Different texture patterns based on building type
+    const patterns = {
+        shop: { baseColor: '#e8c17a', windowColor: '#4a4a4a', windowSize: 30, windowGap: 15 },
+        modern: { baseColor: '#a5d8dd', windowColor: '#2a5674', windowSize: 45, windowGap: 10 },
+        store: { baseColor: '#d4a373', windowColor: '#463f3a', windowSize: 35, windowGap: 20 },
+        traditional: { baseColor: '#cb997e', windowColor: '#6b705c', windowSize: 25, windowGap: 25 },
+        default: { baseColor: `#${color.toString(16).padStart(6, '0')}`, windowColor: '#444444', windowSize: 40, windowGap: 20 }
+    };
+
+    const pattern = patterns[textureType] || patterns.default;
+
+    // Base color
+    context.fillStyle = pattern.baseColor;
+    context.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Draw windows pattern
+    context.fillStyle = pattern.windowColor;
+    const windowSize = pattern.windowSize;
+    const windowGap = pattern.windowGap;
+    const doorWidth = 60;
+    const doorHeight = 100;
+
+    // Draw windows
+    for (let y = windowGap; y < canvas.height - windowGap; y += windowSize + windowGap) {
+        for (let x = windowGap; x < canvas.width - windowGap; x += windowSize + windowGap) {
+            // Skip door area in the middle bottom
+            if (!(y > canvas.height - doorHeight * 1.5 && 
+                  x > (canvas.width - doorWidth) / 2 && 
+                  x < (canvas.width + doorWidth) / 2)) {
+                context.fillRect(x, y, windowSize, windowSize);
+                
+                // Window frame
+                context.strokeStyle = '#666666';
+                context.strokeRect(x, y, windowSize, windowSize);
+            }
+        }
+    }
+
+    // Draw door
+    context.fillStyle = '#333333';
+    context.fillRect(
+        (canvas.width - doorWidth) / 2,
+        canvas.height - doorHeight,
+        doorWidth,
+        doorHeight
+    );
+
+    // Door frame
+    context.strokeStyle = '#666666';
+    context.lineWidth = 2;
+    context.strokeRect(
+        (canvas.width - doorWidth) / 2,
+        canvas.height - doorHeight,
+        doorWidth,
+        doorHeight
+    );
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    
+    return new THREE.MeshLambertMaterial({
+        map: texture,
+        side: THREE.FrontSide
+    });
+}
+
+const buildingMaterial = createBuildingMaterial(BUILDING_COLOR);
 const dashedLineMaterial = new THREE.LineDashedMaterial({
     color: MARKING_COLOR,
     linewidth: 1,
@@ -102,8 +177,29 @@ export function createMapGeometry(mapGroup) {
     // --- Buildings (FR1.1 / FR2.2) ---
     mapData.buildings.forEach(buildingData => {
         const geom = new THREE.BoxGeometry(buildingData.width, buildingData.height, buildingData.depth);
-        const mesh = new THREE.Mesh(geom, buildingMaterial);
-        // Position base at y=0, center geometry at buildingData x,z
+        
+        // Calculate UV repeat based on building size
+        const repeatX = Math.max(1, Math.round(buildingData.width / 10));
+        const repeatY = Math.max(1, Math.round(buildingData.height / 10));
+        
+        // Update UV mapping for proper texture scaling
+        geom.attributes.uv.array = new Float32Array([
+            // Front
+            0, repeatY, repeatX, repeatY, 0, 0, repeatX, 0,
+            // Back
+            0, repeatY, repeatX, repeatY, 0, 0, repeatX, 0,
+            // Top
+            0, 1, 1, 1, 0, 0, 1, 0,
+            // Bottom
+            0, 1, 1, 1, 0, 0, 1, 0,
+            // Right
+            0, repeatY, repeatX, repeatY, 0, 0, repeatX, 0,
+            // Left
+            0, repeatY, repeatX, repeatY, 0, 0, repeatX, 0
+        ]);
+
+        const material = createBuildingMaterial(BUILDING_COLOR, buildingData.textureType);
+        const mesh = new THREE.Mesh(geom, material);
         mesh.position.set(buildingData.x, buildingData.height / 2, buildingData.z);
         mapGroup.add(mesh);
     });
