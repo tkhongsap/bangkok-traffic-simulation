@@ -15,137 +15,214 @@ const FOLLOWING_CHECK_DISTANCE = MAX_SPEED * 2; // How far ahead to check for fo
 
 // --- Vehicle Class (FR5 / FR2.3 / FR6.2) ---
 export class Vehicle {
-    constructor(startNodeId, scene) {
+    constructor(nodeId, scene, direction = 'inbound') {
         this.id = THREE.MathUtils.generateUUID();
-        this.scene = scene; // Store scene reference for adding/removing mesh
+        this.scene = scene;
+        this.direction = direction; // 'inbound' (to roundabout) or 'outbound' (from roundabout)
 
-        // FR2.3: Representation as simple 3D geometric shapes (boxes)
+        // Create 3D representation
         this.geometry = new THREE.BoxGeometry(VEHICLE_LENGTH, VEHICLE_HEIGHT, VEHICLE_WIDTH);
-        // FR6.2: Initial color - Green for moving
         this.material = new THREE.MeshLambertMaterial({ color: 0x00ff00 });
         this.mesh = new THREE.Mesh(this.geometry, this.material);
 
-        const startNode = mapData.nodes[startNodeId];
-        if (!startNode) {
-            console.error(`Invalid startNodeId provided to Vehicle constructor: ${startNodeId}`);
+        // Get the node where this vehicle starts
+        const node = mapData.nodes[nodeId];
+        if (!node) {
+            console.error(`Invalid node ID: ${nodeId}`);
             this.markForRemoval = true;
             return;
         }
 
-        // FR1.3: Assign a random lane (assuming lanes are 0, 1, 2, ... from inside to outside)
-        const entrySegment = mapData.segments.find(s => s.from === startNodeId || s.to === startNodeId);
-        const numLanes = entrySegment?.lanes || 1;
-        this.laneIndex = Math.floor(Math.random() * numLanes);
+        // Position the vehicle at the starting node
+        this.mesh.position.set(node.x, VEHICLE_HEIGHT / 2, node.z);
 
-        this.mesh.position.set(startNode.x, VEHICLE_HEIGHT / 2, startNode.z);
-
-        // FR4.4: Assign a random valid path
-        this.path = this.generateSimplePath(startNodeId);
-        this.currentSegmentIndex = 0;
-        this.progressOnSegment = 0; // Normalized progress (0 to 1)
-        this.currentSpeed = 0; // Current speed m/s
-        this.targetSpeed = MAX_SPEED;
-        this.markForRemoval = false; // Flag for cleanup
-        this.isYielding = false; // FR5.4: Flag for yielding state
-
-        if (this.path && this.path.length > 0) {
-            this.scene.add(this.mesh); // Add mesh to the scene
+        // Assign a lane (Thai traffic: drive on the left)
+        // Lane 0 = Inside/left lane, Lane 1 = Outside/right lane
+        if (direction === 'inbound') {
+            // For inbound: Lane 0 is preferred (closer to center divider)
+            this.laneIndex = Math.random() < 0.7 ? 0 : 1;
         } else {
-            console.warn(`Vehicle ${this.id} created at ${startNodeId} but could not generate a valid path. Marking for removal.`);
+            // For outbound: Lane 1 is preferred (closer to center divider)
+            this.laneIndex = Math.random() < 0.7 ? 1 : 0;
+        }
+
+        // Generate a path based on direction
+        if (direction === 'inbound') {
+            this.path = this.generateInboundPath(nodeId);
+        } else {
+            this.path = this.generateOutboundPath(nodeId);
+        }
+
+        // Initialize movement parameters
+        this.currentSegmentIndex = 0;
+        this.progressOnSegment = 0;
+        this.currentSpeed = 0;
+        this.targetSpeed = MAX_SPEED;
+        this.markForRemoval = false;
+        this.isYielding = false;
+
+        // Add to scene if path generation was successful
+        if (this.path && this.path.length > 0) {
+            // console.log(`Vehicle created: ${direction} path with ${this.path.length} segments`);
+            this.scene.add(this.mesh);
+        } else {
+            console.warn(`Failed to generate ${direction} path for vehicle at ${nodeId}`);
             this.markForRemoval = true;
         }
     }
 
-    // FR4.4 / FR5.2 (Pathfinding): Generates a path for the vehicle
-    generateSimplePath(entryNodeId) {
-        const entrySegment = mapData.segments.find(s => s.from === entryNodeId || s.to === entryNodeId);
-        if (!entrySegment) {
-             console.error("Could not find entry segment for node:", entryNodeId);
-             return [];
+    // Generate a path FROM an entry point TO the roundabout and then to an exit
+    generateInboundPath(entryNodeId) {
+        // Find the inbound segment from entry to roundabout
+        const inboundSegments = mapData.segments.filter(s => 
+            s.id.includes('_in') && s.from === entryNodeId);
+        
+        if (inboundSegments.length === 0) {
+            console.error(`No inbound segment found from ${entryNodeId}`);
+            return [];
         }
-
-        const travelsTowardsRoundabout = entrySegment.to === entryNodeId;
-        const roundaboutEntryNodeId = travelsTowardsRoundabout ? entrySegment.from : entrySegment.to;
-
+        
+        // Choose one if multiple exist
+        const entrySegment = inboundSegments[0];
+        const roundaboutEntryNodeId = entrySegment.to; // The roundabout node we'll enter at
+        
+        // Find roundabout segments
         const roundaboutSegments = mapData.segments.filter(s => s.isRoundabout);
-        if (roundaboutSegments.length === 0) {
-            console.error("No segments marked as 'isRoundabout: true' found in mapData.");
-            return [entrySegment];
-        }
-
-        // FR4.4: Add randomness to exit selection instead of always choosing opposite
-        const exitNodes = new Set();
-        mapData.segments.forEach(segment => {
-            if (!segment.isRoundabout) {
-                if (segment.from.startsWith('r')) exitNodes.add(segment.from);
-                if (segment.to.startsWith('r')) exitNodes.add(segment.to);
-            }
-        });
-        exitNodes.delete(roundaboutEntryNodeId);
         
-        let targetExitRoundaboutNodeId = '';
-        if (exitNodes.size > 0) {
-            const exitNodesArray = Array.from(exitNodes);
-            if (Math.random() < 0.5) {
-                const randomIndex = Math.floor(Math.random() * exitNodesArray.length);
-                targetExitRoundaboutNodeId = exitNodesArray[randomIndex];
-            } else {
-                if (roundaboutEntryNodeId === 'r1') targetExitRoundaboutNodeId = 'r3';
-                else if (roundaboutEntryNodeId === 'r2') targetExitRoundaboutNodeId = 'r4';
-                else if (roundaboutEntryNodeId === 'r3') targetExitRoundaboutNodeId = 'r1';
-                else if (roundaboutEntryNodeId === 'r4') targetExitRoundaboutNodeId = 'r2';
-            }
-        } else {
-            if (roundaboutEntryNodeId === 'r1') targetExitRoundaboutNodeId = 'r3';
-            else if (roundaboutEntryNodeId === 'r2') targetExitRoundaboutNodeId = 'r4';
-            else if (roundaboutEntryNodeId === 'r3') targetExitRoundaboutNodeId = 'r1';
-            else if (roundaboutEntryNodeId === 'r4') targetExitRoundaboutNodeId = 'r2';
-        }
-
-        const pathSegments = [];
-        if(travelsTowardsRoundabout){
-             pathSegments.push({ ...entrySegment, from: entryNodeId, to: roundaboutEntryNodeId, reversed: true });
-        } else {
-            pathSegments.push(entrySegment);
-        }
-
-        const extraLoops = Math.random() < 0.3 ? Math.floor(Math.random() * 2) + 1 : 0;
-        let currentRoundaboutNodeId = roundaboutEntryNodeId;
-        let loopCount = 0;
-        const maxLoops = roundaboutSegments.length * (extraLoops + 1) + 1;
+        // Find possible exit nodes (must be different from entry)
+        const possibleExitNodes = mapData.segments
+            .filter(s => s.id.includes('_out') && s.from !== roundaboutEntryNodeId)
+            .map(s => s.from);
         
-        while(currentRoundaboutNodeId !== targetExitRoundaboutNodeId && loopCount < maxLoops) {
-            const nextSegment = roundaboutSegments.find(s => s.from === currentRoundaboutNodeId);
+        if (possibleExitNodes.length === 0) {
+            console.warn("No valid exit nodes found");
+            return [entrySegment]; // Just use entry segment if no exits found
+        }
+        
+        // Choose exit node: 50% random, 50% opposite
+        let exitNodeId;
+        if (Math.random() < 0.5) {
+            // Random exit
+            exitNodeId = possibleExitNodes[Math.floor(Math.random() * possibleExitNodes.length)];
+        } else {
+            // Try to find opposite exit
+            if (roundaboutEntryNodeId === 'r1') exitNodeId = 'r3';
+            else if (roundaboutEntryNodeId === 'r2') exitNodeId = 'r4';
+            else if (roundaboutEntryNodeId === 'r3') exitNodeId = 'r1';
+            else exitNodeId = 'r2';
+            
+            // Fallback if opposite isn't valid
+            if (!possibleExitNodes.includes(exitNodeId)) {
+                exitNodeId = possibleExitNodes[0];
+            }
+        }
+        
+        // Start building path
+        const path = [entrySegment];
+        
+        // Add roundabout segments to get from entry to exit
+        let currentNodeId = roundaboutEntryNodeId;
+        let segmentCount = 0;
+        const maxSegments = roundaboutSegments.length * 2; // Avoid infinite loops
+        
+        // 30% chance of doing extra loops
+        const shouldDoExtraLoop = Math.random() < 0.3;
+        let loopsCompleted = 0;
+        const maxLoops = shouldDoExtraLoop ? Math.floor(Math.random() * 2) + 1 : 0;
+        
+        // Travel around roundabout until we reach exit node
+        while ((currentNodeId !== exitNodeId || loopsCompleted < maxLoops) && 
+               segmentCount < maxSegments) {
+            
+            // Find next segment in roundabout
+            const nextSegment = roundaboutSegments.find(s => s.from === currentNodeId);
+            
             if (nextSegment) {
-                pathSegments.push(nextSegment);
-                currentRoundaboutNodeId = nextSegment.to;
+                path.push(nextSegment);
+                currentNodeId = nextSegment.to;
+                segmentCount++;
+                
+                // Check if we've completed a loop
+                if (currentNodeId === roundaboutEntryNodeId) {
+                    loopsCompleted++;
+                }
             } else {
-                console.error("Path generation failed: Could not find next roundabout segment from", currentRoundaboutNodeId);
-                return pathSegments;
+                console.error(`Failed to find next roundabout segment from ${currentNodeId}`);
+                break;
             }
-            loopCount++;
-        }
-
-         if (loopCount >= maxLoops) {
-             console.warn("Path generation exceeded max loops. Exiting at:", currentRoundaboutNodeId);
-         }
-
-        const exitSegment = mapData.segments.find(s => s.from === targetExitRoundaboutNodeId && mapData.nodes[s.to]?.isExitPoint);
-        if (exitSegment) {
-            pathSegments.push(exitSegment);
-        } else {
-             const reverseExitSegment = mapData.segments.find(s => s.to === targetExitRoundaboutNodeId && mapData.nodes[s.from]?.isExitPoint);
-             if(reverseExitSegment){
-                 pathSegments.push({ ...reverseExitSegment, from: targetExitRoundaboutNodeId, to: reverseExitSegment.from, reversed: true });
-             } else {
-                console.warn("Path generation failed: Could not find exit segment from", targetExitRoundaboutNodeId);
-             }
         }
         
-        return pathSegments;
+        // Find exit segment
+        const exitSegments = mapData.segments.filter(s => 
+            s.id.includes('_out') && s.from === exitNodeId);
+        
+        if (exitSegments.length > 0) {
+            path.push(exitSegments[0]);
+        }
+        
+        return path;
     }
 
-    // FR5: Update vehicle position, speed, and behavior (yielding, following)
+    // Generate a path FROM the roundabout TO an exit point
+    generateOutboundPath(exitNodeId) {
+        // Find the outbound segment to this exit
+        const outboundSegments = mapData.segments.filter(s => 
+            s.id.includes('_out') && s.to === exitNodeId);
+        
+        if (outboundSegments.length === 0) {
+            console.error(`No outbound segment found to ${exitNodeId}`);
+            return [];
+        }
+        
+        // Choose one if multiple exist
+        const exitSegment = outboundSegments[0];
+        const roundaboutExitNodeId = exitSegment.from; // The node where we exit the roundabout
+        
+        // Find roundabout segments and entry points
+        const roundaboutSegments = mapData.segments.filter(s => s.isRoundabout);
+        
+        // Choose a random starting point on the roundabout (different from exit)
+        const roundaboutNodes = roundaboutSegments.map(s => s.from)
+            .filter((id, index, array) => array.indexOf(id) === index); // unique values
+            
+        const possibleEntryNodes = roundaboutNodes.filter(id => id !== roundaboutExitNodeId);
+        
+        if (possibleEntryNodes.length === 0) {
+            console.error("No valid roundabout entry points for outbound path");
+            return [];
+        }
+        
+        // Choose random entry to roundabout
+        const entryNodeId = possibleEntryNodes[Math.floor(Math.random() * possibleEntryNodes.length)];
+        
+        // Build path from entry around roundabout to exit
+        const path = [];
+        let currentNodeId = entryNodeId;
+        let segmentCount = 0;
+        const maxSegments = roundaboutSegments.length * 2; // Avoid infinite loops
+        
+        // Travel around roundabout until we reach exit point
+        while (currentNodeId !== roundaboutExitNodeId && segmentCount < maxSegments) {
+            // Find next segment in roundabout
+            const nextSegment = roundaboutSegments.find(s => s.from === currentNodeId);
+            
+            if (nextSegment) {
+                path.push(nextSegment);
+                currentNodeId = nextSegment.to;
+                segmentCount++;
+            } else {
+                console.error(`Failed to find next roundabout segment from ${currentNodeId}`);
+                break;
+            }
+        }
+        
+        // Add the exit segment
+        path.push(exitSegment);
+        
+        return path;
+    }
+
+    // --- FR5: Update vehicle position, speed, and behavior ---
     update(deltaTime, allVehicles) {
         if (this.markForRemoval || !this.path || this.currentSegmentIndex >= this.path.length) {
             this.markForRemoval = true;
@@ -274,7 +351,7 @@ export class Vehicle {
                 Math.sin(currentAngle) * radius
             );
             direction.set(-Math.sin(currentAngle), 0, Math.cos(currentAngle)).normalize();
-            perpendicular.set(-Math.cos(currentAngle), 0, -Math.sin(currentAngle)).normalize();
+            perpendicular.set(Math.cos(currentAngle), 0, Math.sin(currentAngle)).normalize();
         } else {
             targetCenterPosition = new THREE.Vector3().lerpVectors(startVec, endVec, this.progressOnSegment);
             targetCenterPosition.y = VEHICLE_HEIGHT / 2;
@@ -282,9 +359,9 @@ export class Vehicle {
             perpendicular.set(-direction.z, 0, direction.x).normalize();
         }
 
-        const numLanes = segment.lanes || 1;
-        const laneOffset = -(ROAD_WIDTH / 2) + LANE_WIDTH * (this.laneIndex + 0.5);
-        const offsetVector = perpendicular.clone().multiplyScalar(laneOffset);
+        const numLanes = segment.lanes || 2;
+        const laneOffsetDistance = (ROAD_WIDTH / 2) - LANE_WIDTH * (this.laneIndex + 0.5);
+        const offsetVector = perpendicular.clone().multiplyScalar(laneOffsetDistance);
         finalTargetPosition = targetCenterPosition.clone().add(offsetVector);
 
         // Update mesh position
@@ -364,17 +441,17 @@ export class Vehicle {
             const angleTotal = angleEnd - angleStart;
             const currentAngle = angleStart + angleTotal * this.progressOnSegment;
             targetCenterPosition = new THREE.Vector3(Math.cos(currentAngle) * radius, VEHICLE_HEIGHT / 2, Math.sin(currentAngle) * radius);
-            perpendicular.set(-Math.cos(currentAngle), 0, -Math.sin(currentAngle)).normalize();
+             perpendicular.set(Math.cos(currentAngle), 0, Math.sin(currentAngle)).normalize(); 
         } else {
             targetCenterPosition = new THREE.Vector3().lerpVectors(startVec, endVec, this.progressOnSegment);
             targetCenterPosition.y = VEHICLE_HEIGHT / 2;
             const direction = new THREE.Vector3().subVectors(endVec, startVec).normalize();
-            perpendicular.set(-direction.z, 0, direction.x).normalize();
+            perpendicular.set(-direction.z, 0, direction.x).normalize(); 
         }
 
-        const numLanes = segment.lanes || 1;
-        const laneOffset = -(ROAD_WIDTH / 2) + LANE_WIDTH * (this.laneIndex + 0.5);
-        const offsetVector = perpendicular.clone().multiplyScalar(laneOffset);
+        const numLanes = segment.lanes || 2;
+        const laneOffsetDistance = (ROAD_WIDTH / 2) - LANE_WIDTH * (this.laneIndex + 0.5);
+        const offsetVector = perpendicular.clone().multiplyScalar(laneOffsetDistance);
         const finalPosition = targetCenterPosition.clone().add(offsetVector);
         this.mesh.position.copy(finalPosition);
     }
@@ -386,6 +463,5 @@ export class Vehicle {
         }
         this.geometry?.dispose();
         this.material?.dispose();
-        // console.log(`Vehicle ${this.id} disposed.`);
     }
 } 

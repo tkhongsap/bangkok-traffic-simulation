@@ -136,36 +136,58 @@ export function update(deltaTime, scene) {
  * @param {THREE.Scene} scene - The scene to add vehicles to
  */
 function spawnVehicle(deltaTime, scene) {
-    const entryNodes = Object.keys(mapData.nodes).filter(nodeId => mapData.nodes[nodeId].isEntryPoint);
+    // Find nodes marked as entry points (e.g., a1_end, a2_end, etc.)
+    const entryNodeIds = Object.keys(mapData.nodes).filter(nodeId => mapData.nodes[nodeId].isEntryPoint);
     
     // Initialize timing for any new entry nodes
-    for (const nodeId of entryNodes) {
-        if (timeSinceLastSpawn[nodeId] === undefined) {
-            // Stagger initial spawns to prevent all entry points spawning at once
-            timeSinceLastSpawn[nodeId] = Math.random() * getCurrentSpawnInterval() * 0.5; // Reduced from full interval
+    for (const nodeId of entryNodeIds) {
+        // For inbound vehicles (from entry to roundabout)
+        if (timeSinceLastSpawn[nodeId + "_in"] === undefined) {
+            timeSinceLastSpawn[nodeId + "_in"] = Math.random() * getCurrentSpawnInterval() * 0.5;
+        }
+        
+        // For outbound vehicles (from roundabout to exit)
+        if (timeSinceLastSpawn[nodeId + "_out"] === undefined) {
+            timeSinceLastSpawn[nodeId + "_out"] = Math.random() * getCurrentSpawnInterval() * 0.7;
         }
     }
     
     // Get current spawn interval based on time of day
     const currentInterval = getCurrentSpawnInterval();
     
-    // Check each entry point for spawning
-    for (const nodeId of entryNodes) {
-        // Update time since last spawn
-        timeSinceLastSpawn[nodeId] += deltaTime;
+    // Process each entry/exit point
+    for (const nodeId of entryNodeIds) {
+        // === INBOUND VEHICLES (towards roundabout) ===
+        timeSinceLastSpawn[nodeId + "_in"] += deltaTime;
         
-        // Spawn vehicle if enough time has passed (reduced threshold to 60%)
-        if (timeSinceLastSpawn[nodeId] >= currentInterval * 0.6) {
-            // Increased chance to spawn (from 30% to 70%)
-            const shouldSpawn = timeSinceLastSpawn[nodeId] >= currentInterval * 0.75 || Math.random() < 0.7;
+        if (timeSinceLastSpawn[nodeId + "_in"] >= currentInterval * 0.6) {
+            const shouldSpawn = timeSinceLastSpawn[nodeId + "_in"] >= currentInterval * 0.75 || 
+                               Math.random() < 0.7;
             
             if (shouldSpawn) {
-                const vehicle = new Vehicle(nodeId, scene);
+                const vehicle = new Vehicle(nodeId, scene, "inbound");
                 
-                // Only add vehicle if path generation was successful
                 if (!vehicle.markForRemoval) {
                     vehicles.push(vehicle);
-                    timeSinceLastSpawn[nodeId] = 0;
+                    timeSinceLastSpawn[nodeId + "_in"] = 0;
+                }
+            }
+        }
+        
+        // === OUTBOUND VEHICLES (away from roundabout) ===
+        timeSinceLastSpawn[nodeId + "_out"] += deltaTime;
+        
+        // Slightly different spawn parameters for outbound traffic
+        if (timeSinceLastSpawn[nodeId + "_out"] >= currentInterval * 0.7) {
+            const shouldSpawn = timeSinceLastSpawn[nodeId + "_out"] >= currentInterval * 0.85 || 
+                               Math.random() < 0.6;
+            
+            if (shouldSpawn) {
+                const vehicle = new Vehicle(nodeId, scene, "outbound");
+                
+                if (!vehicle.markForRemoval) {
+                    vehicles.push(vehicle);
+                    timeSinceLastSpawn[nodeId + "_out"] = 0;
                 }
             }
         }
