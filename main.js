@@ -1,63 +1,92 @@
 import * as THREE from 'three';
-// import { OrbitControls } from 'three/addons/controls/OrbitControls.js'; // Optional: For camera control
 import { createMapGeometry } from './mapRenderer.js';
 import * as simulation from './simulation.js';
-import { mapData } from './mapData.js'; // Import mapData directly if needed for UI logic
 
-// --- Constants --- 
-// Removed map/vehicle constants, assuming they are handled in simulation/vehicle modules
-
-// --- Basic Scene Setup ---
-let scene, camera, renderer;
+let scene;
+let camera;
+let renderer;
 let simulationContainer;
 let lastTimestamp = 0;
 let ambientLight;
-const mapGroup = new THREE.Group(); // Group to hold map meshes
+const mapGroup = new THREE.Group();
 
-// --- Simulation State ---
-// Removed simulation time variables, assuming managed by simulation.js
-
-// --- UI Elements ---
 let timeDisplayElement;
 let vehicleCountElement;
 let peakIndicatorElement;
 
-// --- Initialization Function --- 
 function init() {
-    // Get container and UI elements
     simulationContainer = document.getElementById('simulation-container');
     timeDisplayElement = document.getElementById('time-display');
     vehicleCountElement = document.getElementById('vehicle-count');
     peakIndicatorElement = document.getElementById('peak-indicator');
+    peakIndicatorElement.classList.add('normal');
 
-    // Set initial UI text directly
-    timeDisplayElement.textContent = "Time: 08:00";
-    vehicleCountElement.textContent = "Vehicles: 0";
-    // Initial peak state might depend on simulation start time, let updateUI handle it or set default
-    // peakIndicatorElement.textContent = "Peak Traffic (Morning)"; // Let updateUI handle initial state
-    // peakIndicatorElement.classList.add("peak");
-
-    // Scene
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x87ceeb); // Sky blue background
+    scene.background = new THREE.Color(0xaed8ff);
+    scene.fog = new THREE.Fog(0xbfdcff, 150, 420);
 
-    
+    const aspect = window.innerWidth / window.innerHeight;
+    camera = new THREE.PerspectiveCamera(60, aspect, 0.1, 800);
+    camera.position.set(140, 120, 180);
+    camera.lookAt(0, 0, 0);
 
-    // Add Clouds
-    const cloudMaterial = new THREE.MeshLambertMaterial({ color: 0xffffff });
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    simulationContainer.appendChild(renderer.domElement);
+
+    ambientLight = new THREE.AmbientLight(0xffffff, 0.65);
+    scene.add(ambientLight);
+
+    const sunLight = new THREE.DirectionalLight(0xfff0d0, 0.9);
+    sunLight.position.set(120, 180, 80);
+    sunLight.castShadow = true;
+    sunLight.shadow.mapSize.set(2048, 2048);
+    sunLight.shadow.camera.near = 10;
+    sunLight.shadow.camera.far = 600;
+    sunLight.shadow.camera.left = -250;
+    sunLight.shadow.camera.right = 250;
+    sunLight.shadow.camera.top = 250;
+    sunLight.shadow.camera.bottom = -250;
+    scene.add(sunLight);
+
+    const groundGeometry = new THREE.PlaneGeometry(1000, 1000);
+    const groundMaterial = new THREE.MeshLambertMaterial({ color: 0xcdeccd });
+    const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+    ground.rotation.x = -Math.PI / 2;
+    ground.receiveShadow = true;
+    scene.add(ground);
+
+    createMapGeometry(mapGroup);
+    mapGroup.traverse(child => {
+        if (child.isMesh) {
+            child.castShadow = child.geometry.type === 'BoxGeometry';
+            child.receiveShadow = true;
+        }
+    });
+    scene.add(mapGroup);
+
+    const cloudMaterial = new THREE.MeshLambertMaterial({ color: 0xffffff, transparent: true, opacity: 0.9 });
     const clouds = [];
-    
-    function createCloud(x, y, z) {
+    function createCloud(x, y, z, scale = 1) {
         const group = new THREE.Group();
-        const sizes = [3, 2.5, 2.8, 2.3];
-        const positions = [[0,0,0], [-2.5,0.2,0], [2.5,-0.1,0], [1.2,0.3,1]];
-        positions.forEach((pos, i) => {
-            const cloudPart = new THREE.Mesh(
-                new THREE.SphereGeometry(sizes[i], 16, 16),
-                cloudMaterial
+        const sizes = [3, 2.4, 2.8, 2.1];
+        const offsets = [
+            [0, 0, 0],
+            [-2.2, 0.3, 0.8],
+            [2.1, -0.2, -0.6],
+            [0.8, 0.4, -0.4]
+        ];
+        sizes.forEach((size, index) => {
+            const puff = new THREE.Mesh(new THREE.SphereGeometry(size * scale, 12, 12), cloudMaterial);
+            puff.position.set(
+                offsets[index][0] * scale,
+                offsets[index][1] * scale,
+                offsets[index][2] * scale
             );
-            cloudPart.position.set(...pos);
-            group.add(cloudPart);
+            group.add(puff);
         });
         group.position.set(x, y, z);
         clouds.push(group);
@@ -65,119 +94,69 @@ function init() {
         return group;
     }
 
-    // Add multiple clouds
-    createCloud(-60, 50, -80);
-    createCloud(40, 45, -90);
-    createCloud(-20, 55, -85);
-    createCloud(70, 48, -75);
+    createCloud(-80, 70, -110, 1.4);
+    createCloud(70, 65, -130, 1.1);
+    createCloud(-40, 75, 90, 1.2);
+    createCloud(90, 60, 120, 1.3);
 
-    // Camera (Perspective) - FR2.3
-    const aspect = window.innerWidth / window.innerHeight;
-    camera = new THREE.PerspectiveCamera(75, aspect, 0.1, 1000);
-    camera.position.set(0, 80, 120);
-    camera.lookAt(0, 0, 0);
-
-    // Renderer
-    renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    simulationContainer.appendChild(renderer.domElement);
-
-    // Lighting - FR2.6
-    ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
-    scene.add(ambientLight);
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    directionalLight.position.set(50, 100, 25);
-    scene.add(directionalLight);
-
-    // Ground Plane (Placeholder)
-    const groundGeometry = new THREE.PlaneGeometry(500, 500);
-    const groundMaterial = new THREE.MeshLambertMaterial({ color: 0x90EE90 }); // Light green grass
-    const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-    ground.rotation.x = -Math.PI / 2;
-    ground.position.y = -0.1;
-    scene.add(ground);
-
-    // Add map group to scene
-    scene.add(mapGroup);
-
-    // Create Map Geometry (using imported function from mapRenderer.js)
-    createMapGeometry(mapGroup); // Pass mapGroup to the renderer function
-
-    // Optional: Orbit Controls for Camera
-    // const controls = new OrbitControls(camera, renderer.domElement);
-
-    // Handle window resize
     window.addEventListener('resize', onWindowResize);
 
-    // Start the animation loop
     lastTimestamp = performance.now();
-    animate(lastTimestamp);
+    animate(lastTimestamp, clouds);
 }
 
-// --- Window Resize Handler --- 
 function onWindowResize() {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
-// --- UI Update Logic (FR3.2, FR6.1) --- 
 function updateUI(simulationTime, vehicleCount) {
-    // Update Time Display
     const hours = String(simulationTime.getHours()).padStart(2, '0');
     const minutes = String(simulationTime.getMinutes()).padStart(2, '0');
     timeDisplayElement.textContent = `Time: ${hours}:${minutes}`;
 
-    // Update Peak Hour Indicator (FR4.3)
-    // Use isPeakHour from the simulation module if needed, or pass status from simulation.update
-    const isPeak = simulation.isPeakHour(simulationTime); // Assuming simulation module exports this
-
-    if (isPeak) {
+    const peak = simulation.isPeakHour(simulationTime);
+    if (peak) {
         const isMorning = simulationTime.getHours() < 12;
-        peakIndicatorElement.textContent = isMorning ? 
-            "Peak Traffic (Morning)" : "Peak Traffic (Evening)";
-        peakIndicatorElement.classList.remove("normal");
-        peakIndicatorElement.classList.add("peak");
+        peakIndicatorElement.textContent = isMorning ? 'Peak Traffic (Morning)' : 'Peak Traffic (Evening)';
+        peakIndicatorElement.classList.remove('normal');
+        peakIndicatorElement.classList.add('peak');
     } else {
-        peakIndicatorElement.textContent = "Normal Traffic";
-        peakIndicatorElement.classList.remove("peak");
-        peakIndicatorElement.classList.add("normal");
+        peakIndicatorElement.textContent = 'Normal Traffic';
+        peakIndicatorElement.classList.remove('peak');
+        peakIndicatorElement.classList.add('normal');
     }
 
-    // Update Vehicle Count
     vehicleCountElement.textContent = `Vehicles: ${vehicleCount}`;
 }
 
+function animate(timestamp, clouds) {
+    requestAnimationFrame(nextTimestamp => animate(nextTimestamp, clouds));
 
-// --- Animation Loop --- (Calls simulation update)
-function animate(timestamp) {
-    requestAnimationFrame(animate); // Loop
-
-    const deltaTime = (timestamp - lastTimestamp) / 1000; // Time delta in seconds
+    const deltaTime = (timestamp - lastTimestamp) / 1000;
     lastTimestamp = timestamp;
+    const dt = Math.min(deltaTime, 0.1);
 
-    const dt = Math.min(deltaTime, 0.1); // Use clamped delta time for updates
+    clouds.forEach((cloud, index) => {
+        cloud.position.x += Math.sin(timestamp * 0.00005 + index) * 0.02;
+        cloud.position.z += Math.cos(timestamp * 0.00004 + index) * 0.015;
+    });
 
-    if (dt > 0) { // Only update if time has actually passed
-        // Update simulation logic (imported function)
+    if (dt > 0) {
         const simState = simulation.update(dt, scene);
-
-        // Set constant ambient light
-        ambientLight.intensity = 0.7;
-
-        // Update UI elements using the returned state
+        ambientLight.intensity = 0.65;
         updateUI(simState.time, simState.vehicleCount);
-
-        // Optional: Update controls if using OrbitControls with damping
-        // controls.update();
     }
 
-    // Render the scene
+    const orbitRadius = 220;
+    const orbitSpeed = 0.00006;
+    const cameraAngle = timestamp * orbitSpeed;
+    camera.position.x = Math.cos(cameraAngle) * orbitRadius;
+    camera.position.z = Math.sin(cameraAngle) * orbitRadius;
+    camera.lookAt(new THREE.Vector3(0, 0, 0));
+
     renderer.render(scene, camera);
 }
 
-// --- Main Execution --- 
 init();
-
-// Removed Vehicle class, spawnVehicles, createVehicle, removeFinishedVehicles, isPeakHour, 
-// mapData definition (use import), vehicles array, and related constants.

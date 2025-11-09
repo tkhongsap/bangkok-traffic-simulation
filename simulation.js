@@ -2,272 +2,163 @@ import { mapData } from './mapData.js';
 import { Vehicle } from './vehicle.js';
 import { Pedestrian } from './pedestrian.js';
 
-// --- Simulation State ---
-let simulationTime = new Date();
-simulationTime.setHours(6, 0, 0, 0);
-const startTimeMillis = 6 * 60 * 60 * 1000;
-const endTimeMillis = 20 * 60 * 60 * 1000;
-const simulationSpeedMultiplier = 600;
+const START_HOUR = 6;
+const END_HOUR = 20;
+const SIMULATION_SPEED = 600;
+const MAX_VEHICLES = 90;
+const NUM_PEDESTRIANS = 200;
 
-// Store active vehicles and pedestrians
-const vehicles = [];
-const pedestrians = [];
-const NUM_PEDESTRIANS = 250; // Increased from 80
+const BASE_SPAWN_INTERVAL = 5.5;
+const PEAK_INTERVAL_MULTIPLIER = 0.38;
+const OFFPEAK_VARIATION = 0.6;
 
-// FR4.2: Vehicle Spawning Configuration
-const BASE_SPAWN_INTERVAL = 0.05; // Faster spawning (twice as frequent)
-const PEAK_HOUR_MULTIPLIER = 0.01; // Even more vehicles during peak hours
-let timeSinceLastSpawn = {}; // { [nodeId: string]: number }
-
-// FR4.3: Define peak hour intervals exactly as specified in requirements
 const PEAK_HOURS = [
-    { start: { hour: 8, minute: 0 }, end: { hour: 9, minute: 30 } },  // Morning peak: 8:00-9:30
-    { start: { hour: 17, minute: 0 }, end: { hour: 19, minute: 0 } }  // Evening peak: 17:00-19:00
+    { start: { hour: 7, minute: 30 }, end: { hour: 9, minute: 30 } },
+    { start: { hour: 16, minute: 30 }, end: { hour: 19, minute: 0 } }
 ];
 
-/** Gets the current simulation time */
+let simulationTime = new Date();
+simulationTime.setHours(START_HOUR, 0, 0, 0);
+
+const vehicles = [];
+const pedestrians = [];
+
+const spawnTimers = new Map();
+const entrySegments = mapData.segments.filter(segment =>
+    segment.from.startsWith('a') && segment.to.startsWith('r')
+);
+
+const exitSegments = mapData.segments.filter(segment =>
+    segment.from.startsWith('r') && segment.to.startsWith('a')
+);
+
+const entryNodeIds = [...new Set(entrySegments.map(segment => segment.from))];
+
+function initialiseSpawnTimers() {
+    entryNodeIds.forEach(id => {
+        if (!spawnTimers.has(id)) {
+            spawnTimers.set(id, Math.random() * BASE_SPAWN_INTERVAL);
+        }
+    });
+}
+
+initialiseSpawnTimers();
+
 export function getSimulationTime() {
     return simulationTime;
 }
 
-/** Gets the current list of active vehicles */
 export function getVehicles() {
     return vehicles;
 }
 
-/**
- * Checks if the given time is within any of the defined peak hour intervals
- * FR4.3: Implementation of peak hour check
- * @param {Date} simTime - The simulation time to check
- * @returns {boolean} True if the time is within a peak hour interval
- */
 export function isPeakHour(time) {
-    const hour = time.getHours();
-    const minute = time.getMinutes();
-
-    return PEAK_HOURS.some(peak => {
-        const startTotalMinutes = peak.start.hour * 60 + peak.start.minute;
-        const endTotalMinutes = peak.end.hour * 60 + peak.end.minute;
-        const currentTotalMinutes = hour * 60 + minute;
-
-        return currentTotalMinutes >= startTotalMinutes && currentTotalMinutes <= endTotalMinutes;
+    const minutes = time.getHours() * 60 + time.getMinutes();
+    return PEAK_HOURS.some(({ start, end }) => {
+        const startMinutes = start.hour * 60 + start.minute;
+        const endMinutes = end.hour * 60 + end.minute;
+        return minutes >= startMinutes && minutes <= endMinutes;
     });
 }
 
-/**
- * Returns the current spawn interval based on time of day
- * Makes spawn rate difference more pronounced between peak/non-peak
- * @returns {number} The current spawn interval in seconds
- */
 function getCurrentSpawnInterval() {
-    // Check if we're in peak hours
-    const inPeakHour = isPeakHour(simulationTime);
-
-    // Base interval adjusted for peak hours
-    let interval = inPeakHour ? BASE_SPAWN_INTERVAL * PEAK_HOUR_MULTIPLIER : BASE_SPAWN_INTERVAL;
-
-    // Add additional randomness to create more varied traffic patterns
-    // Reduced randomness to keep spawn rate high consistently
-    const randomFactor = inPeakHour ? 
-        0.8 + Math.random() * 0.2 : // 0.8-1.1 during peak (less randomness = more consistent high traffic)
-        0.8 + Math.random() * 0.4;  // 0.8-1.2 during normal hours
-
-    interval *= randomFactor;
-
-    // Enhance spawning with time-based patterns - more cars in the middle of peak periods
-    if (inPeakHour) {
-        // Find how deep we are into the current peak period (0-1 scale)
-        const currentHour = simulationTime.getHours();
-        const currentMinute = simulationTime.getMinutes();
-        const currentTotalMinutes = currentHour * 60 + currentMinute;
-
-        // Find which peak period we're in
-        const currentPeak = PEAK_HOURS.find(peak => {
-            const startTotalMinutes = peak.start.hour * 60 + peak.start.minute;
-            const endTotalMinutes = peak.end.hour * 60 + peak.end.minute;
-            return currentTotalMinutes >= startTotalMinutes && currentTotalMinutes <= endTotalMinutes;
-        });
-
-        if (currentPeak) {
-            const startTotalMinutes = currentPeak.start.hour * 60 + currentPeak.start.minute;
-            const endTotalMinutes = currentPeak.end.hour * 60 + currentPeak.end.minute;
-            const peakDurationMinutes = endTotalMinutes - startTotalMinutes;
-            const minutesIntoPeak = currentTotalMinutes - startTotalMinutes;
-
-            // Calculate a factor based on position in peak period (lowest in middle of peak)
-            // This creates a curve where traffic is heaviest in the middle of peak periods
-            const positionInPeak = minutesIntoPeak / peakDurationMinutes; // 0-1
-            const peakIntensityFactor = Math.abs(positionInPeak - 0.5) * 2; // 0-1, with 0 at middle of peak
-
-            // Apply a stronger reduction at peak intensity for maximum traffic
-            interval *= 0.6 + (peakIntensityFactor * 0.4); // 0.6-1.0 multiplier (was 0.8-1.2)
-        }
-    }
-
-    return Math.max(interval, 0.2); // Ensure minimum interval is 0.2 seconds (was 0.5)
+    const peak = isPeakHour(simulationTime);
+    const base = peak ? BASE_SPAWN_INTERVAL * PEAK_INTERVAL_MULTIPLIER : BASE_SPAWN_INTERVAL;
+    const randomFactor = peak ? 0.85 + Math.random() * 0.3 : 1 - OFFPEAK_VARIATION / 2 + Math.random() * OFFPEAK_VARIATION;
+    return Math.max(1.2, base * randomFactor);
 }
 
-// --- Simulation Update Function ---
-/**
- * Update the simulation state for one frame
- * @param {number} deltaTime - Time in seconds since last update
- * @param {THREE.Scene} scene - The Three.js scene
- */
-export function update(deltaTime, scene) {
-    // 1. Update Simulation Time (FR3)
-    updateSimulationTime(deltaTime);
+function updateSimulationClock(deltaTime) {
+    const elapsedMillis = deltaTime * 1000 * SIMULATION_SPEED;
+    simulationTime = new Date(simulationTime.getTime() + elapsedMillis);
 
-    // 2. Spawn Vehicles (FR4)
-    spawnVehicle(deltaTime, scene);
-
-    // 3. Update Vehicles (FR5)
-    updateVehicles(deltaTime);
-
-    // 4. Clean up vehicles that have completed their path
-    cleanupVehicles();
-
-    // 5. Initialize pedestrians if needed
-    if (pedestrians.length === 0) {
-        for (let i = 0; i < NUM_PEDESTRIANS; i++) {
-            pedestrians.push(new Pedestrian(scene));
-        }
+    if (simulationTime.getHours() >= END_HOUR) {
+        simulationTime.setHours(START_HOUR, 0, 0, 0);
+        spawnTimers.clear();
+        initialiseSpawnTimers();
     }
-
-    // 6. Update pedestrians
-    pedestrians.forEach(pedestrian => pedestrian.update(deltaTime));
-
-    return {
-        time: simulationTime,
-        vehicleCount: vehicles.length
-    };
 }
 
-/**
- * FR4: Vehicle Spawning Logic
- * Handles spawning vehicles at entry points with variable rates based on time
- * @param {number} deltaTime - Time elapsed since last frame
- * @param {THREE.Scene} scene - The scene to add vehicles to
- */
-function spawnVehicle(deltaTime, scene) {
-    const entryNodes = Object.keys(mapData.nodes).filter(nodeId => mapData.nodes[nodeId].isEntryPoint);
-
-    // Initialize timing for any new entry nodes
-    for (const nodeId of entryNodeIds) {
-        // For inbound vehicles (from entry to roundabout)
-        if (timeSinceLastSpawn[nodeId + "_in"] === undefined) {
-            timeSinceLastSpawn[nodeId + "_in"] = Math.random() * getCurrentSpawnInterval() * 0.5;
-        }
-        
-        // For outbound vehicles (from roundabout to exit)
-        if (timeSinceLastSpawn[nodeId + "_out"] === undefined) {
-            timeSinceLastSpawn[nodeId + "_out"] = Math.random() * getCurrentSpawnInterval() * 0.7;
-        }
+function spawnVehicles(deltaTime, scene) {
+    if (vehicles.length >= MAX_VEHICLES) {
+        return;
     }
 
-    // Get current spawn interval based on time of day
     const currentInterval = getCurrentSpawnInterval();
+    const peak = isPeakHour(simulationTime);
 
-    // Check each entry point for spawning
-    for (const nodeId of entryNodes) {
-        // Update time since last spawn
-        timeSinceLastSpawn[nodeId] += deltaTime;
+    entryNodeIds.forEach(entryId => {
+        const currentTimer = (spawnTimers.get(entryId) ?? 0) + deltaTime;
+        spawnTimers.set(entryId, currentTimer);
 
-        // Spawn vehicle if enough time has passed (reduced threshold to 40%)
-        if (timeSinceLastSpawn[nodeId] >= currentInterval * 0.4) {
-            // Very high chance to spawn
-            const shouldSpawn = timeSinceLastSpawn[nodeId] >= currentInterval * 0.3 || Math.random() < 0.95;
-
-            if (shouldSpawn) {
-                const vehicle = new Vehicle(nodeId, scene);
-
-                // Only add vehicle if path generation was successful
-                if (!vehicle.markForRemoval) {
-                    vehicles.push(vehicle);
-                    timeSinceLastSpawn[nodeId + "_in"] = 0;
-                }
-            }
+        if (currentTimer < currentInterval) {
+            return;
         }
-        
-        // === OUTBOUND VEHICLES (away from roundabout) ===
-        timeSinceLastSpawn[nodeId + "_out"] += deltaTime;
-        
-        // Slightly different spawn parameters for outbound traffic
-        if (timeSinceLastSpawn[nodeId + "_out"] >= currentInterval * 0.7) {
-            const shouldSpawn = timeSinceLastSpawn[nodeId + "_out"] >= currentInterval * 0.85 || 
-                               Math.random() < 0.6;
-            
-            if (shouldSpawn) {
-                const vehicle = new Vehicle(nodeId, scene, "outbound");
-                
-                if (!vehicle.markForRemoval) {
-                    vehicles.push(vehicle);
-                    timeSinceLastSpawn[nodeId + "_out"] = 0;
-                }
-            }
+
+        const possibleEntrySegments = entrySegments.filter(segment => segment.from === entryId);
+        if (possibleEntrySegments.length === 0) {
+            return;
         }
-    }
+
+        const entrySegment = possibleEntrySegments[Math.floor(Math.random() * possibleEntrySegments.length)];
+        const entryRoundaboutNode = entrySegment.to;
+
+        const possibleExitSegments = exitSegments.filter(segment => segment.from !== entryRoundaboutNode);
+        if (possibleExitSegments.length === 0) {
+            spawnTimers.set(entryId, currentTimer - currentInterval * 0.5);
+            return;
+        }
+
+        const exitSegment = possibleExitSegments[Math.floor(Math.random() * possibleExitSegments.length)];
+        const loops = peak && Math.random() < 0.25 ? 1 : 0;
+
+        const vehicle = new Vehicle({ entrySegment, exitSegment, scene, loops });
+        if (!vehicle.markForRemoval) {
+            vehicles.push(vehicle);
+            spawnTimers.set(entryId, 0);
+        } else {
+            spawnTimers.set(entryId, currentTimer - currentInterval * 0.4);
+        }
+    });
 }
 
-/**
- * FR5.5: Remove vehicles that have finished their path
- * Cleans up vehicle resources and removes them from the active vehicles array
- */
-function removeFinishedVehicles() {
-    for (let i = vehicles.length - 1; i >= 0; i--) {
-        if (vehicles[i].markForRemoval) {
-            vehicles[i].dispose(); // Clean up Three.js resources
-            vehicles.splice(i, 1); // Remove from active array
-        }
-    }
-}
-
-// --- Simulation Helper Functions ---
-
-/**
- * Updates the simulation time based on delta time
- * @param {number} deltaTime - Time in seconds since last update
- */
-function updateSimulationTime(deltaTime) {
-    // Convert real-time delta to simulation time (apply speed multiplier)
-    const elapsedMillis = deltaTime * 1000 * simulationSpeedMultiplier;
-
-    // Update simulation time
-    simulationTime.setTime(simulationTime.getTime() + elapsedMillis);
-
-    // Reset time if we reach the end time (20:00)
-    if (simulationTime.getHours() >= 20) {
-        simulationTime.setHours(8, 0, 0, 0);
-        console.log("Simulation time reset to 08:00");
-        // Reset spawn timers to avoid burst of vehicles when resetting
-        timeSinceLastSpawn = {};
-    }
-}
-
-/**
- * Updates all vehicles in the simulation
- * @param {number} deltaTime - Time in seconds since last update
- */
 function updateVehicles(deltaTime) {
-    // Pass the entire vehicles array for collision/yielding checks
-    vehicles.forEach(vehicle => vehicle.update(deltaTime, vehicles));
+    const peak = isPeakHour(simulationTime);
+    vehicles.forEach(vehicle => vehicle.update(deltaTime, vehicles, peak));
 }
 
-/**
- * Removes vehicles that have completed their path
- */
 function cleanupVehicles() {
-    const initialCount = vehicles.length;
-
-    // Remove vehicles that have reached their destination
-    for (let i = vehicles.length - 1; i >= 0; i--) {
+    for (let i = vehicles.length - 1; i >= 0; i -= 1) {
         if (vehicles[i].markForRemoval) {
             vehicles[i].dispose();
             vehicles.splice(i, 1);
         }
     }
+}
 
-    // Log cleanup if significant
-    if (initialCount - vehicles.length > 3) {
-        console.log(`Cleaned up ${initialCount - vehicles.length} vehicles. Current count: ${vehicles.length}`);
+function ensurePedestrians(scene) {
+    if (pedestrians.length > 0) {
+        return;
     }
+    for (let i = 0; i < NUM_PEDESTRIANS; i += 1) {
+        pedestrians.push(new Pedestrian(scene));
+    }
+}
+
+function updatePedestrians(deltaTime) {
+    pedestrians.forEach(pedestrian => pedestrian.update(deltaTime));
+}
+
+export function update(deltaTime, scene) {
+    updateSimulationClock(deltaTime);
+    ensurePedestrians(scene);
+    spawnVehicles(deltaTime, scene);
+    updateVehicles(deltaTime);
+    cleanupVehicles();
+    updatePedestrians(deltaTime);
+
+    return {
+        time: simulationTime,
+        vehicleCount: vehicles.length,
+    };
 }
