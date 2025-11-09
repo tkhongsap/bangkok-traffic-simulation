@@ -31,13 +31,8 @@ export class Vehicle {
         // FR2.3: Representation as simple 3D geometric shapes (boxes) - Body and Cabin
         this.vehicleGroup = new THREE.Group();
 
-        // Vehicle Body - More curved look
+        // Vehicle Body
         const bodyGeometry = new THREE.BoxGeometry(VEHICLE_LENGTH, BODY_HEIGHT, VEHICLE_WIDTH);
-        bodyGeometry.vertices.forEach(vertex => {
-            if (vertex.y > 0) {
-                vertex.y *= 1.2; // Slight curve on top
-            }
-        });
         this.bodyMaterial = new THREE.MeshLambertMaterial({ color: 0x00ff00 });
         const bodyMesh = new THREE.Mesh(bodyGeometry, this.bodyMaterial);
         bodyMesh.position.y = BODY_HEIGHT / 2;
@@ -85,25 +80,15 @@ export class Vehicle {
             return;
         }
 
-        // Position the vehicle at the starting node
-        this.mesh.position.set(node.x, VEHICLE_HEIGHT / 2, node.z);
-
         // Set initial position for the group
-        this.vehicleGroup.position.set(startNode.x, 0, startNode.z); // Group base at y=0
+        this.vehicleGroup.position.set(node.x, 0, node.z); // Group base at y=0
 
-        // FR4.4: Assign a random valid path
-        this.path = this.generateSimplePath(startNodeId);
-        this.currentSegmentIndex = 0;
-        this.progressOnSegment = 0; // Normalized progress (0 to 1)
-        this.currentSpeed = 0; // Current speed m/s
-        this.targetSpeed = MAX_SPEED;
-        this.markForRemoval = false; // Flag for cleanup
-        this.isYielding = false; // FR5.4: Flag for yielding state
-
-        if (this.path && this.path.length > 0) {
-            this.scene.add(this.vehicleGroup); // Add group to the scene
+        // Random lane selection
+        // For inbound: Lane 0 is preferred (outer lane)
+        // For outbound: Lane 1 is preferred (closer to center divider)
+        if (direction === 'inbound') {
+            this.laneIndex = Math.random() < 0.7 ? 0 : 1;
         } else {
-            // For outbound: Lane 1 is preferred (closer to center divider)
             this.laneIndex = Math.random() < 0.7 ? 1 : 0;
         }
 
@@ -125,7 +110,7 @@ export class Vehicle {
         // Add to scene if path generation was successful
         if (this.path && this.path.length > 0) {
             // console.log(`Vehicle created: ${direction} path with ${this.path.length} segments`);
-            this.scene.add(this.mesh);
+            this.scene.add(this.vehicleGroup);
         } else {
             console.warn(`Failed to generate ${direction} path for vehicle at ${nodeId}`);
             this.markForRemoval = true;
