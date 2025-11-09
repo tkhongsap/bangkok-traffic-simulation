@@ -1,7 +1,8 @@
 body {
     margin: 0;
-    overflow: hidden; /* Prevent scrollbars */
-    font-family: sans-serif;
+    overflow: hidden;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: radial-gradient(circle at top, #cbe7ff, #7fb0e7 60%, #5d7fc2);
 }
 
 #simulation-container {
@@ -12,41 +13,44 @@ body {
 
 #ui-overlay {
     position: absolute;
-    top: 10px;
-    left: 10px;
-    color: white;
-    background-color: rgba(0, 0, 0, 0.6);
-    padding: 8px 15px;
-    border-radius: 5px;
-    font-size: 14px;
-    z-index: 10; /* Ensure it's above the canvas */
+    top: 20px;
+    left: 20px;
+    color: #ffffff;
+    background: rgba(14, 32, 64, 0.7);
+    padding: 14px 20px;
+    border-radius: 10px;
+    font-size: 16px;
+    line-height: 1.4;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+    backdrop-filter: blur(6px);
+    z-index: 10;
 }
 
 #ui-overlay div {
-    margin-bottom: 5px;
+    margin-bottom: 6px;
 }
 
 #ui-overlay div:last-child {
     margin-bottom: 0;
 }
 
-/* FR4.3: Visual indicator for peak hours */
 #peak-indicator {
-    font-weight: bold;
-    transition: color 0.5s ease;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    transition: color 0.4s ease, transform 0.4s ease;
 }
 
 #peak-indicator.normal {
-    color: #88ff88; /* Light green for normal traffic */
+    color: #b9ffb7;
 }
 
 #peak-indicator.peak {
-    color: #ff8888; /* Light red for peak traffic */
-    animation: pulse 2s infinite;
+    color: #ffb3b3;
+    animation: pulse 1.8s infinite;
 }
 
 @keyframes pulse {
-    0% { opacity: 0.7; }
-    50% { opacity: 1; }
-    100% { opacity: 0.7; }
-} 
+    0% { opacity: 0.7; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.04); }
+    100% { opacity: 0.7; transform: scale(1); }
+}
