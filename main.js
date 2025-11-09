@@ -13,12 +13,20 @@ const mapGroup = new THREE.Group();
 let timeDisplayElement;
 let vehicleCountElement;
 let peakIndicatorElement;
+let intensityElement;
+let roundaboutElement;
+let queueElement;
+let incidentElement;
 
 function init() {
     simulationContainer = document.getElementById('simulation-container');
     timeDisplayElement = document.getElementById('time-display');
     vehicleCountElement = document.getElementById('vehicle-count');
     peakIndicatorElement = document.getElementById('peak-indicator');
+    intensityElement = document.getElementById('intensity-indicator');
+    roundaboutElement = document.getElementById('roundabout-density');
+    queueElement = document.getElementById('queue-indicator');
+    incidentElement = document.getElementById('incident-status');
     peakIndicatorElement.classList.add('normal');
 
     scene = new THREE.Scene();
@@ -103,6 +111,11 @@ function init() {
 
     lastTimestamp = performance.now();
     animate(lastTimestamp, clouds);
+
+    window.bangkokSimulation = window.bangkokSimulation || {};
+    window.bangkokSimulation.setTime = (hour, minute = 0, second = 0) => {
+        simulation.setSimulationTime(hour, minute, second);
+    };
 }
 
 function onWindowResize() {
@@ -111,13 +124,14 @@ function onWindowResize() {
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
-function updateUI(simulationTime, vehicleCount) {
+function updateUI(simState) {
+    const { time: simulationTime, vehicleCount, isPeak, intensity, roundaboutCount, roundaboutDensity, maxApproachQueue, incident } = simState;
+
     const hours = String(simulationTime.getHours()).padStart(2, '0');
     const minutes = String(simulationTime.getMinutes()).padStart(2, '0');
     timeDisplayElement.textContent = `Time: ${hours}:${minutes}`;
 
-    const peak = simulation.isPeakHour(simulationTime);
-    if (peak) {
+    if (isPeak) {
         const isMorning = simulationTime.getHours() < 12;
         peakIndicatorElement.textContent = isMorning ? 'Peak Traffic (Morning)' : 'Peak Traffic (Evening)';
         peakIndicatorElement.classList.remove('normal');
@@ -129,6 +143,20 @@ function updateUI(simulationTime, vehicleCount) {
     }
 
     vehicleCountElement.textContent = `Vehicles: ${vehicleCount}`;
+    intensityElement.textContent = `Demand Index: ${intensity.toFixed(2)}`;
+
+    const densityPercent = Math.round(Math.min(1, roundaboutDensity) * 100);
+    roundaboutElement.textContent = `Roundabout: ${roundaboutCount} vehicles (${densityPercent}% load)`;
+    queueElement.textContent = `Heaviest Queue: ${maxApproachQueue} vehicles`;
+
+    if (incident) {
+        const minutesRemaining = Math.max(1, Math.ceil(incident.remainingMinutes));
+        incidentElement.textContent = `Active Incident: ${incident.reason} near ${incident.label} (~${minutesRemaining} min)`;
+        incidentElement.classList.add('active');
+    } else {
+        incidentElement.textContent = 'No active incidents';
+        incidentElement.classList.remove('active');
+    }
 }
 
 function animate(timestamp, clouds) {
@@ -146,7 +174,7 @@ function animate(timestamp, clouds) {
     if (dt > 0) {
         const simState = simulation.update(dt, scene);
         ambientLight.intensity = 0.65;
-        updateUI(simState.time, simState.vehicleCount);
+        updateUI(simState);
     }
 
     const orbitRadius = 220;

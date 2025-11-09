@@ -1,41 +1,82 @@
 import * as THREE from 'three';
 import { mapData, ROUNDABOUT_RADIUS, LANE_WIDTH, ROAD_WIDTH } from './mapData.js';
+import { VEHICLE_TYPES } from './trafficConfig.js';
 
-const VEHICLE_LENGTH = 3.8;
-const VEHICLE_WIDTH = 1.6;
-const VEHICLE_HEIGHT = 1.4;
-const CABIN_HEIGHT = 0.7;
-const WHEEL_RADIUS = 0.32;
-const WHEEL_WIDTH = 0.28;
 const DRIVE_RADIUS = ROUNDABOUT_RADIUS - LANE_WIDTH * 0.65;
 const APPROACH_OFFSET = ROAD_WIDTH * 0.6;
+const DEFAULT_TYPE = VEHICLE_TYPES?.sedan ?? {
+    name: 'Sedan',
+    length: 4.2,
+    width: 1.75,
+    height: 1.45,
+    cabinLengthFactor: 0.55,
+    cabinHeightFactor: 0.55,
+    cabinWidthFactor: 0.85,
+    wheelRadius: 0.34,
+    wheelWidth: 0.28,
+    wheelFrontFactor: 0.4,
+    wheelRearFactor: 0.4,
+    wheelSideFactor: 0.55,
+    maxSpeed: 17,
+    peakSpeed: 12,
+    acceleration: 5,
+    deceleration: 9,
+    roundaboutSpeed: 6.8,
+    queueSpeed: 3.2,
+    incidentSpeed: 2.2,
+    followDistance: 7,
+    brakeBias: 1.5,
+    aggressiveness: 1,
+    speedVariance: 0.9,
+    roundaboutAnxiety: 0.3,
+    loopChance: 0.2,
+    burstChance: 0.2,
+    burstSize: 2,
+    colorPalette: [0xff7043, 0x42a5f5, 0xffca28, 0x66bb6a, 0xab47bc, 0x26c6da, 0xef5350]
+};
 
-const CAR_COLORS = [
-    0xff7043, 0x42a5f5, 0xffca28, 0x66bb6a, 0xab47bc, 0x26c6da, 0xef5350
-];
+function chooseColor(palette = []) {
+    if (!palette.length) {
+        return 0xffffff * Math.random();
+    }
+    const index = Math.floor(Math.random() * palette.length);
+    return palette[index];
+}
 
-function createVehicleMesh() {
-    const bodyGeometry = new THREE.BoxGeometry(VEHICLE_LENGTH, VEHICLE_HEIGHT * 0.6, VEHICLE_WIDTH);
+function createVehicleMesh(vehicleType) {
+    const length = vehicleType.length;
+    const width = vehicleType.width;
+    const height = vehicleType.height;
+
+    const bodyHeight = height * (vehicleType.bodyHeightFactor ?? 0.6);
+    const cabinLength = length * (vehicleType.cabinLengthFactor ?? 0.55);
+    const cabinHeight = height * (vehicleType.cabinHeightFactor ?? 0.6);
+    const cabinWidth = width * (vehicleType.cabinWidthFactor ?? 0.85);
+    const bodyGeometry = new THREE.BoxGeometry(length, bodyHeight, width);
     const bodyMaterial = new THREE.MeshLambertMaterial({
-        color: CAR_COLORS[Math.floor(Math.random() * CAR_COLORS.length)],
+        color: chooseColor(vehicleType.colorPalette),
     });
     const bodyMesh = new THREE.Mesh(bodyGeometry, bodyMaterial);
-    bodyMesh.position.y = VEHICLE_HEIGHT * 0.3;
+    bodyMesh.position.y = height * 0.3;
 
-    const cabinGeometry = new THREE.BoxGeometry(VEHICLE_LENGTH * 0.55, CABIN_HEIGHT, VEHICLE_WIDTH * 0.85);
-    const cabinMaterial = new THREE.MeshLambertMaterial({ color: 0xf5f5f5 });
+    const cabinGeometry = new THREE.BoxGeometry(cabinLength, cabinHeight, cabinWidth);
+    const cabinMaterial = new THREE.MeshLambertMaterial({ color: 0xf5f5f5, transparent: true, opacity: 0.92 });
     const cabinMesh = new THREE.Mesh(cabinGeometry, cabinMaterial);
-    cabinMesh.position.set(-VEHICLE_LENGTH * 0.05, VEHICLE_HEIGHT * 0.65, 0);
+    cabinMesh.position.set(-length * 0.05, height * 0.58, 0);
 
-    const wheelGeometry = new THREE.CylinderGeometry(WHEEL_RADIUS, WHEEL_RADIUS, WHEEL_WIDTH, 12);
-    const wheelMaterial = new THREE.MeshLambertMaterial({ color: 0x111111 });
+    const wheelRadius = vehicleType.wheelRadius ?? 0.32;
+    const wheelWidth = vehicleType.wheelWidth ?? 0.28;
+    const wheelGeometry = new THREE.CylinderGeometry(wheelRadius, wheelRadius, wheelWidth, 14);
+    const wheelMaterial = new THREE.MeshLambertMaterial({ color: 0x141414 });
 
-    const wheelPositions = [
-        [VEHICLE_LENGTH * 0.35, WHEEL_RADIUS, VEHICLE_WIDTH * 0.5],
-        [VEHICLE_LENGTH * 0.35, WHEEL_RADIUS, -VEHICLE_WIDTH * 0.5],
-        [-VEHICLE_LENGTH * 0.35, WHEEL_RADIUS, VEHICLE_WIDTH * 0.5],
-        [-VEHICLE_LENGTH * 0.35, WHEEL_RADIUS, -VEHICLE_WIDTH * 0.5]
-    ];
+    const wheelPositions = vehicleType.customWheelPositions
+        ? vehicleType.customWheelPositions.map(position => [...position])
+        : [
+            [length * (vehicleType.wheelFrontFactor ?? 0.4), wheelRadius, width * (vehicleType.wheelSideFactor ?? 0.52)],
+            [length * (vehicleType.wheelFrontFactor ?? 0.4), wheelRadius, -width * (vehicleType.wheelSideFactor ?? 0.52)],
+            [-length * (vehicleType.wheelRearFactor ?? 0.4), wheelRadius, width * (vehicleType.wheelSideFactor ?? 0.52)],
+            [-length * (vehicleType.wheelRearFactor ?? 0.4), wheelRadius, -width * (vehicleType.wheelSideFactor ?? 0.52)],
+        ];
 
     const group = new THREE.Group();
     group.add(bodyMesh);
@@ -48,13 +89,12 @@ function createVehicleMesh() {
         group.add(wheel);
     });
 
-    // Simple headlights for a touch of detail
-    const headlightGeometry = new THREE.BoxGeometry(0.2, 0.18, 0.3);
-    const headlightMaterial = new THREE.MeshLambertMaterial({ color: 0xfff9c4, emissive: 0xfff176, emissiveIntensity: 0.5 });
+    const headlightGeometry = new THREE.BoxGeometry(width * 0.22, height * 0.18, width * 0.25);
+    const headlightMaterial = new THREE.MeshLambertMaterial({ color: 0xfff9c4, emissive: 0xfff176, emissiveIntensity: 0.45 });
     const leftLight = new THREE.Mesh(headlightGeometry, headlightMaterial);
     const rightLight = leftLight.clone();
-    leftLight.position.set(VEHICLE_LENGTH * 0.52, VEHICLE_HEIGHT * 0.4, VEHICLE_WIDTH * 0.3);
-    rightLight.position.set(VEHICLE_LENGTH * 0.52, VEHICLE_HEIGHT * 0.4, -VEHICLE_WIDTH * 0.3);
+    leftLight.position.set(length * 0.52, height * 0.45, width * 0.32);
+    rightLight.position.set(length * 0.52, height * 0.45, -width * 0.32);
     group.add(leftLight);
     group.add(rightLight);
 
@@ -79,12 +119,17 @@ function computePathLength(points) {
 }
 
 export class Vehicle {
-    constructor({ entrySegment, exitSegment, scene, loops = 0 }) {
+    constructor({ entrySegment, exitSegment, scene, loops = 0, vehicleType }) {
         this.entrySegment = entrySegment;
         this.exitSegment = exitSegment;
         this.scene = scene;
-        this.mesh = createVehicleMesh();
+
+        const template = { ...DEFAULT_TYPE, ...(vehicleType ?? {}) };
+        this.vehicleType = template;
+
+        this.mesh = createVehicleMesh(template);
         this.mesh.castShadow = false;
+        this.mesh.userData.type = template.name;
 
         const startNode = mapData.nodes[entrySegment.from];
         const entryNode = mapData.nodes[entrySegment.to];
@@ -110,10 +155,21 @@ export class Vehicle {
         this.distanceTravelled = 0;
         this.currentSegmentIndex = 0;
 
-        this.maxSpeed = 16;
-        this.peakSpeed = 11;
-        this.acceleration = 5;
-        this.deceleration = 10;
+        this.maxSpeed = template.maxSpeed ?? 16;
+        this.peakSpeed = template.peakSpeed ?? this.maxSpeed * 0.75;
+        this.acceleration = template.acceleration ?? 5;
+        this.deceleration = template.deceleration ?? 9;
+        this.roundaboutSpeed = template.roundaboutSpeed ?? Math.min(this.maxSpeed, 7);
+        this.queueSpeed = template.queueSpeed ?? 3;
+        this.incidentSpeed = template.incidentSpeed ?? 2.2;
+        this.followDistance = template.followDistance ?? 6.5;
+        this.brakeBias = template.brakeBias ?? 1.5;
+        this.aggressiveness = template.aggressiveness ?? 1;
+        this.roundaboutAnxiety = template.roundaboutAnxiety ?? 0.28;
+        this.queueThreshold = template.queueThreshold ?? Math.max(2, Math.round(this.followDistance / 2));
+        this.speedVariance = (template.speedVariance ?? 1) * (0.9 + Math.random() * 0.25);
+        this.verticalOffset = Math.max(template.height * 0.45, (template.wheelRadius ?? 0.3) + 0.05);
+
         this.speed = 0;
         this.markForRemoval = false;
 
@@ -171,26 +227,70 @@ export class Vehicle {
         return curve.getPoints(160);
     }
 
-    update(deltaTime, neighbours, isPeakHour) {
+    update(deltaTime, neighbours, context) {
         if (this.markForRemoval) {
             return;
         }
 
-        const desiredSpeed = isPeakHour ? this.peakSpeed : this.maxSpeed;
-        let targetSpeed = desiredSpeed;
+        const { peak, roundaboutDensity, approachCounts, incidentEntry, incidentSeverity, intensity } = context;
+        const baseSpeed = (peak ? this.peakSpeed : this.maxSpeed) * this.speedVariance;
+        let targetSpeed = baseSpeed;
 
-        for (const other of neighbours) {
-            if (other === this || other.markForRemoval) continue;
-            const distance = this.mesh.position.distanceTo(other.mesh.position);
-            if (distance < VEHICLE_LENGTH * 2.5) {
-                targetSpeed = Math.min(targetSpeed, Math.max(0, other.speed - 1));
+        const approachQueue = approachCounts.get(this.entrySegment.from) ?? 0;
+        if (this.isOnApproach() && approachQueue > this.queueThreshold) {
+            targetSpeed = Math.min(targetSpeed, this.queueSpeed);
+        }
+
+        if (this.isInRoundabout()) {
+            const densityExcess = Math.max(0, roundaboutDensity - this.roundaboutAnxiety);
+            if (densityExcess > 0) {
+                const clamp = Math.min(1, densityExcess * 2.1);
+                targetSpeed = Math.min(targetSpeed, this.roundaboutSpeed * (1 - clamp * 0.45));
             }
         }
 
+        if (incidentEntry && incidentEntry === this.entrySegment.from && this.isOnApproach()) {
+            const severityFactor = 1 + incidentSeverity * 0.6;
+            targetSpeed = Math.min(targetSpeed, this.incidentSpeed / severityFactor);
+        }
+
+        if (!peak && intensity > 1.15 && this.isInRoundabout()) {
+            targetSpeed = Math.min(targetSpeed, this.roundaboutSpeed * 0.95);
+        }
+
+        for (const other of neighbours) {
+            if (other === this || other.markForRemoval) continue;
+
+            if (other.entrySegment.from === this.entrySegment.from) {
+                if (other.distanceTravelled <= this.distanceTravelled) {
+                    continue;
+                }
+
+                const gap = other.distanceTravelled - this.distanceTravelled;
+                if (gap < this.followDistance) {
+                    const safeSpeed = Math.max(0, other.speed - this.brakeBias);
+                    targetSpeed = Math.min(targetSpeed, safeSpeed);
+                }
+
+                continue;
+            }
+
+            const distance = this.mesh.position.distanceTo(other.mesh.position);
+            if (distance < this.followDistance) {
+                const safeSpeed = Math.max(0, other.speed - this.brakeBias);
+                targetSpeed = Math.min(targetSpeed, safeSpeed);
+            }
+        }
+
+        targetSpeed = Math.max(0, targetSpeed);
+
+        const accel = this.acceleration * this.aggressiveness;
+        const decel = this.deceleration / Math.max(0.6, this.aggressiveness);
+
         if (this.speed < targetSpeed) {
-            this.speed = Math.min(targetSpeed, this.speed + this.acceleration * deltaTime);
+            this.speed = Math.min(targetSpeed, this.speed + accel * deltaTime);
         } else {
-            this.speed = Math.max(targetSpeed, this.speed - this.deceleration * deltaTime);
+            this.speed = Math.max(targetSpeed, this.speed - decel * deltaTime);
         }
 
         this.distanceTravelled += this.speed * deltaTime;
@@ -211,16 +311,30 @@ export class Vehicle {
         }
 
         const startPoint = this.pathPoints[segmentIndex];
-        const endPoint = this.pathPoints[segmentIndex + 1];
+        const endPoint = this.pathPoints[Math.min(segmentIndex + 1, this.pathPoints.length - 1)];
         const segmentLength = this.segmentLengths[segmentIndex] || 1;
         const t = segmentLength === 0 ? 0 : remaining / segmentLength;
 
         const position = new THREE.Vector3().lerpVectors(startPoint, endPoint, t);
-        this.mesh.position.set(position.x, VEHICLE_HEIGHT * 0.5, position.z);
+        this.mesh.position.set(position.x, this.verticalOffset, position.z);
 
         const direction = endPoint.clone().sub(startPoint).normalize();
         const yaw = Math.atan2(direction.x, direction.z);
         this.mesh.rotation.y = yaw;
+    }
+
+    isInRoundabout() {
+        const { x, z } = this.mesh.position;
+        const distance = Math.sqrt(x * x + z * z);
+        return distance < ROUNDABOUT_RADIUS + LANE_WIDTH * 1.25;
+    }
+
+    isOnApproach() {
+        return this.distanceTravelled < this.totalPathLength * 0.35;
+    }
+
+    isOnExit() {
+        return this.distanceTravelled > this.totalPathLength * 0.65;
     }
 
     dispose() {
