@@ -3,18 +3,20 @@ import { Vehicle } from './vehicle.js';
 import { Pedestrian } from './pedestrian.js';
 
 const START_HOUR = 6;
-const END_HOUR = 20;
+const END_HOUR = 22; // Extended to 22:00 to cover 21:00
 const SIMULATION_SPEED = 600;
-const MAX_VEHICLES = 90;
-const NUM_PEDESTRIANS = 200;
+const MAX_VEHICLES = 250; // Increased for Bangkok-level traffic complexity
+const NUM_PEDESTRIANS = 300; // More pedestrians for realistic Bangkok scenes
 
-const BASE_SPAWN_INTERVAL = 5.5;
-const PEAK_INTERVAL_MULTIPLIER = 0.38;
-const OFFPEAK_VARIATION = 0.6;
+const BASE_SPAWN_INTERVAL = 3.5; // Faster spawning for heavier traffic
+const PEAK_INTERVAL_MULTIPLIER = 0.25; // Even more aggressive during peaks
+const OFFPEAK_VARIATION = 0.5;
 
+// Bangkok has extended peak hours with morning, lunch, and evening rushes
 const PEAK_HOURS = [
-    { start: { hour: 7, minute: 30 }, end: { hour: 9, minute: 30 } },
-    { start: { hour: 16, minute: 30 }, end: { hour: 19, minute: 0 } }
+    { start: { hour: 7, minute: 0 }, end: { hour: 10, minute: 0 } },    // Morning rush
+    { start: { hour: 11, minute: 30 }, end: { hour: 13, minute: 30 } }, // Lunch traffic
+    { start: { hour: 16, minute: 0 }, end: { hour: 20, minute: 0 } }    // Evening rush (extended)
 ];
 
 let simulationTime = new Date();

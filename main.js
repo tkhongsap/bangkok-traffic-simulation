@@ -14,6 +14,17 @@ let timeDisplayElement;
 let vehicleCountElement;
 let peakIndicatorElement;
 
+// Screenshot configuration
+const SCREENSHOT_TIMES = [
+    { hour: 8, minute: 0 },
+    { hour: 10, minute: 0 },
+    { hour: 12, minute: 0 },
+    { hour: 17, minute: 0 },
+    { hour: 19, minute: 0 },
+    { hour: 21, minute: 0 }
+];
+const capturedScreenshots = new Set();
+
 function init() {
     simulationContainer = document.getElementById('simulation-container');
     timeDisplayElement = document.getElementById('time-display');
@@ -111,6 +122,59 @@ function onWindowResize() {
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
+function captureScreenshot(hour, minute) {
+    const canvas = renderer.domElement;
+    const imageData = canvas.toDataURL('image/png');
+    const timeStr = `${String(hour).padStart(2, '0')}_${String(minute).padStart(2, '0')}`;
+
+    // Save to server
+    fetch('/save-screenshot', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            imageData: imageData,
+            timestamp: timeStr
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log(`✓ Screenshot saved to server: ${data.filename}`);
+    })
+    .catch(error => {
+        console.error('Error saving screenshot:', error);
+        // Fallback to download if server save fails
+        const link = document.createElement('a');
+        link.download = `bangkok_traffic_${timeStr}.png`;
+        link.href = imageData;
+        link.click();
+    });
+
+    console.log(`📸 Screenshot captured at ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`);
+}
+
+function checkAndCaptureScreenshot(simulationTime) {
+    const currentHour = simulationTime.getHours();
+    const currentMinute = simulationTime.getMinutes();
+
+    SCREENSHOT_TIMES.forEach(time => {
+        const key = `${time.hour}-${time.minute}`;
+
+        // Check if we're at or past the screenshot time and haven't captured it yet
+        if (currentHour === time.hour && currentMinute === time.minute && !capturedScreenshots.has(key)) {
+            capturedScreenshots.add(key);
+            // Delay slightly to ensure rendering is complete
+            setTimeout(() => captureScreenshot(time.hour, time.minute), 100);
+        }
+    });
+
+    // Reset captured screenshots when simulation loops back to start
+    if (currentHour === 6 && currentMinute === 0) {
+        capturedScreenshots.clear();
+    }
+}
+
 function updateUI(simulationTime, vehicleCount) {
     const hours = String(simulationTime.getHours()).padStart(2, '0');
     const minutes = String(simulationTime.getMinutes()).padStart(2, '0');
@@ -129,6 +193,9 @@ function updateUI(simulationTime, vehicleCount) {
     }
 
     vehicleCountElement.textContent = `Vehicles: ${vehicleCount}`;
+
+    // Check for screenshot capture
+    checkAndCaptureScreenshot(simulationTime);
 }
 
 function animate(timestamp, clouds) {

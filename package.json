@@ -2,9 +2,10 @@
   "name": "workspace",
   "version": "1.0.0",
   "type": "module",
-  "main": "server.js",
+  "main": "screenshot-server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node screenshot-server.js",
+    "basic": "node server.js"
   },
   "keywords": [],
   "author": "",
@@ -13,5 +14,8 @@
   "dependencies": {
     "express": "^5.1.0",
     "three": "^0.175.0"
+  },
+  "devDependencies": {
+    "playwright": "^1.56.1"
   }
 }
