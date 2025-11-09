@@ -152,7 +152,7 @@ function spawnVehicle(deltaTime, scene) {
     const entryNodes = Object.keys(mapData.nodes).filter(nodeId => mapData.nodes[nodeId].isEntryPoint);
 
     // Initialize timing for any new entry nodes
-    for (const nodeId of entryNodeIds) {
+    for (const nodeId of entryNodes) {
         // For inbound vehicles (from entry to roundabout)
         if (timeSinceLastSpawn[nodeId + "_in"] === undefined) {
             timeSinceLastSpawn[nodeId + "_in"] = Math.random() * getCurrentSpawnInterval() * 0.5;
@@ -169,13 +169,14 @@ function spawnVehicle(deltaTime, scene) {
 
     // Check each entry point for spawning
     for (const nodeId of entryNodes) {
+        // === INBOUND VEHICLES (to roundabout) ===
         // Update time since last spawn
-        timeSinceLastSpawn[nodeId] += deltaTime;
+        timeSinceLastSpawn[nodeId + "_in"] += deltaTime;
 
         // Spawn vehicle if enough time has passed (reduced threshold to 40%)
-        if (timeSinceLastSpawn[nodeId] >= currentInterval * 0.4) {
+        if (timeSinceLastSpawn[nodeId + "_in"] >= currentInterval * 0.4) {
             // Very high chance to spawn
-            const shouldSpawn = timeSinceLastSpawn[nodeId] >= currentInterval * 0.3 || Math.random() < 0.95;
+            const shouldSpawn = timeSinceLastSpawn[nodeId + "_in"] >= currentInterval * 0.3 || Math.random() < 0.95;
 
             if (shouldSpawn) {
                 const vehicle = new Vehicle(nodeId, scene);
